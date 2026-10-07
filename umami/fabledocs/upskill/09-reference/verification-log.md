@@ -9,6 +9,7 @@ Convention: `__verified__` = command run in this environment and output observed
 - Repo: `umami` v3.1.0 (`package.json:3`), MIT license, Next.js 16 App Router, React 19, TypeScript 5.9. __verified__ (read `package.json`)
 - No `node_modules`, no `.env`, no running DB in the clone. Build/test/dev commands are therefore documented as __inferred__. __verified__ (`ls`, no `node_modules`)
 - Git: repository has **no commits** (`git log` → "does not have any commits yet"). No history to mine for interview stories; stories are sourced from the code as it stands. __verified__
+  - *Status 2026-10-06:* the enclosing repo now has exactly one commit, a workspace backup ("Back up Desktop workspace snapshot"). It is a snapshot, not upstream history, so the conclusion stands: there is still no meaningful history to mine.
 - Package manager: pnpm (`pnpm-lock.yaml`, `pnpm-workspace.yaml` present). __verified__
 - Linter/formatter: Biome (`biome.json`, scripts `lint`/`format`/`check`). __verified__ (read `package.json:47-49`)
 - Test runner: Vitest for unit (`vitest.config.ts`, `test` script), Cypress for e2e (`cypress/`). __verified__
@@ -38,7 +39,7 @@ Convention: `__verified__` = command run in this environment and output observed
 | Recorder | `src/recorder/index.js` | rrweb sampling, flush by count/interval |
 | Client data layer | `src/components/hooks/useApi.ts`, `queries/useWebsiteMetricsQuery.ts`, `useUpdateQuery.ts` | React Query wrapper, share headers, query keys |
 | Store | `src/store/app.ts`, `src/lib/client.ts` | Zustand global store, localStorage auth token |
-| Schema (DB) | `prisma/schema.prisma` | 16 models, index strategy, soft-delete columns, relationMode="prisma" |
+| Schema (DB) | `prisma/schema.prisma` | 17 models (re-counted 2026-10-06; originally logged as 16), index strategy, soft-delete columns, relationMode="prisma" |
 | Schema (API) | `src/lib/schema.ts` | Zod param groups, discriminated report union, funnel/segment schemas |
 | Funnel report | `src/queries/sql/reports/getFunnel.ts` | Dynamic CTE generation per step, window join |
 | Website CRUD | `src/app/api/websites/[websiteId]/route.ts` | GET/POST/DELETE, share upsert, unique-constraint catch |
@@ -56,17 +57,21 @@ Convention: `__verified__` = command run in this environment and output observed
 4. Persistence is polymorphic: one logical write dispatches to Postgres (Prisma) **or** ClickHouse, and optionally Kafka, by environment variable — never both stores at once. `src/lib/db.ts:22-36`.
 5. `saveEvent` → `saveEventData` → `saveRevenue` run as sequential awaits inside the request; there is no outbox/transaction spanning them on the ClickHouse path. `src/queries/sql/events/saveEvent.ts:143-167`.
 6. Kafka `sendMessage` swallows errors (`console.log` then returns undefined) — a broker failure silently drops the event. `src/lib/kafka.ts:87-90`.
+   - *Status 2026-10-06 (re-read):* the swallow is narrower than first written. `sendMessage` does `return producer.send(...)` **without `await`** (`kafka.ts:73`), so a rejection from `producer.send` itself (send timeout, broker lost after connecting) escapes the `try/catch`, propagates through `await sendMessage(...)` (`saveEvent.ts:260`) and becomes a 500 in the route's catch (`send/route.ts:314-320`). What *is* swallowed: failures in `connect()` and synchronous throws. Worse, `connect()` assigns `kafka` before awaiting `getProducer()` (`kafka.ts:95-98`), so if the first producer connect fails, `kafka` stays set and `producer` stays undefined; every later call skips reconnecting, hits a `TypeError` on `producer.send`, and is swallowed. Net: silent loss is real, but it shows up as connect-phase loss that lasts until restart, not loss on every send.
 7. `/api/record` deliberately calls `getWebsite` directly instead of the Redis-cached `fetchWebsite`, to avoid a stale `replayEnabled` flag. `src/app/api/record/route.ts:56-57`.
 
 ## Possible risks (labelled — investigate, not confirmed bugs)
 
 1. **Latent SQL-injection surface in `pagedRawQuery`.** `order by ${orderBy} ${direction}` interpolates `orderBy` directly into SQL. `src/lib/prisma.ts:318-323`. Currently **not exploitable**: the analytics list routes (`/websites/[id]/sessions`, `/events`) hardcode `order by ... desc` in the SQL and their Zod schemas omit `sortingParams`, so `filters.orderBy` is always `undefined`. Risk is that a future route wiring user `orderBy` into a raw path would introduce injection. Verified by reading `getWebsiteSessions.ts`, `getWebsiteEvents.ts`, and the route schemas.
+   - *Status 2026-10-06 (re-checked):* still not reachable. The ClickHouse twin has the same interpolation (`src/lib/clickhouse.ts:250`). `pagedRawQuery` has four raw callers: `getWebsiteSessions`, `getWebsiteEvents`, `getSessionReplays`, `getRevenueSessions`. `sortingParams` (`src/lib/schema.ts:82-84`) is exported but imported nowhere. No `src/app` route schema accepts `orderBy`; the admin/team routes that use `orderBy` pass Prisma `orderBy` objects, not raw SQL.
 2. **No application-level rate limiting on collection.** `redis.rateLimit` exists (`src/lib/redis.ts:72-82`) but `grep` finds no caller in `src/app/api`. `/api/send` is open to volume abuse absent an upstream proxy. Investigate whether infra handles this.
 3. **`/api/batch` is sequential and unbounded in item count** beyond Zod's array validation; each item re-enters the full `send` handler. Potential latency/DoS amplification. `src/app/api/batch/route.ts:21-46`.
 
 ## Final anchor-verification pass
 
 After drafting, key anchors were re-opened and confirmed against the live source (line-for-line): `send/route.ts:147` (sessionId derivation), `db.ts:8` (BigInt patch), `prisma.ts:318-323` (orderBy interpolation), `kafka.ts:87-90` (swallowed error), `createSession.ts:39` (`on conflict do nothing`), `record/route.ts:56` (cache-bypass comment), `permissions/website.ts:7` (canViewWebsite), `schema.ts:279` (discriminatedUnion), `constants.ts:186` (ROLE_PERMISSIONS), `schema.prisma:99` (WebsiteEvent), `request.ts:33-38` (suffixed-filter re-add), `jwt.ts:16` (createSecureToken). All matched. Line numbers elsewhere were written against the same clone and should be re-checked if the repo advances (line numbers drift).
+
+*Status 2026-10-06 (static re-verification, no commands run beyond reading/grep):* the anchors above still match `umami` v3.1.0. Also re-confirmed: `kafka.ts:87-90`, `prisma.ts:307-332` (`pagedRawQuery`), `request.ts:44-50`, `realtime/[websiteId]/route.ts:20`, `redis.ts:72` (`rateLimit`, still no caller in `src/`), `record/route.ts:117-124`, `login/route.ts:39`, and `load.ts:10` (86400s TTL). An IDOR sweep found 59 dynamic-segment routes under `src/app/api`. 56 call a `can*` permission helper. `users/[userId]/teams` and `users/[userId]/websites` use an inline self-or-admin check instead (`auth.user.id !== userId && !isAdmin`). `share/[slug]` is public by design. Drift corrected in the curriculum: the model count (17, not 16), the language-cap anchor in the fast track (`send/route.ts:33`), the `canViewWebsite` precedence order in the system-design walkthrough, and the Kafka swallow scope described in observation 6.
 
 ## Not covered / uncertainties
 

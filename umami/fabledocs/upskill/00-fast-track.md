@@ -71,7 +71,7 @@ If you only open ten files this weekend, open these — they are the load-bearin
 | 6 | `src/lib/auth.ts` | Authentication (who are you?). |
 | 7 | `src/permissions/website.ts` | Authorization (may you?). |
 | 8 | `src/lib/prisma.ts` | Hand-written SQL engine + param binding. |
-| 9 | `prisma/schema.prisma` | The 16-model data model. |
+| 9 | `prisma/schema.prisma` | The 17-model data model. |
 | 10 | `src/components/hooks/useApi.ts` | The client's single door to the API. |
 
 ## 3. One small, safe change
@@ -79,7 +79,7 @@ If you only open ten files this weekend, open these — they are the load-bearin
 Pick **one**. Each has a tiny blast radius and touches a real code path.
 
 - **Add a unit test** for `hasBlockedIp` covering a CIDR range match. Read [`src/lib/detect.ts:140`](../../src/lib/detect.ts) and mirror the style of [`src/lib/boards.test.ts`](../../src/lib/boards.test.ts). Run `pnpm test`. __inferred__
-- **Tighten a Zod bound**: `payload.language` is capped at 35 chars (`src/app/api/send/route.ts:34`). Add a matching cap to `name` (currently `.max(50)`, `:38`) usage elsewhere, or add a test asserting the 50-char event-name truncation in `saveEvent` (`src/queries/sql/events/saveEvent.ts:131`).
+- **Tighten a Zod bound**: `payload.language` is capped at 35 chars (`src/app/api/send/route.ts:33`). Add a matching cap to `name` (currently `.max(50)`, `:38`) usage elsewhere, or add a test asserting the 50-char event-name truncation in `saveEvent` (`src/queries/sql/events/saveEvent.ts:131`).
 - **Documentation-as-code**: add a one-line comment above `runQuery` (`src/lib/db.ts:22`) naming the three dispatch targets. Trivial, but forces you to confirm you understand it.
 
 Whichever you pick: it must follow an existing pattern, be covered by a test, and not touch an unrelated file. That is the contribution standard the whole `06-contribution-practice/` module builds on.
@@ -98,7 +98,7 @@ Set a 2-minute timer and explain Flow A as if to an interviewer:
 
 > "A tiny script POSTs an event with no cookie. The server validates it with Zod, skips auth on purpose, checks a signed cache token to avoid re-looking-up the website, derives a visitor id by hashing IP + UA + a rotating salt so it's anonymous, then dispatches the write to Postgres or ClickHouse depending on config…"
 
-If you can say that without notes and name two failure modes (Kafka silently dropping events; a forged-but-signed cache token being replay-only), you have the weekend's core. The interview version of this exact narration is in [`08-interview-prep/04-system-design-from-this-repo.md`](08-interview-prep/04-system-design-from-this-repo.md).
+If you can say that without notes and name two failure modes (Kafka silently dropping events when the producer fails to connect; a forged-but-signed cache token being replay-only), you have the weekend's core. The interview version of this exact narration is in [`08-interview-prep/04-system-design-from-this-repo.md`](08-interview-prep/04-system-design-from-this-repo.md).
 
 ## What the fast path skips (come back for these)
 

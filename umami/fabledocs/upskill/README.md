@@ -27,9 +27,9 @@ Read the repo's identity in one paragraph: *Umami receives anonymous events from
 | `03-architecture-and-patterns/` | Boundaries, the data model, validation/authz, async & reliability, a pattern catalog, and an architecture critique. |
 | `04-code-reading-gym/` | Annotation drills, trace tables, bad-vs-better contrasts, review katas — active practice. |
 | `05-quality-engineering/` | Testing strategy & recipes, systematic debugging, performance, security checklist, observability. |
-| `06-contribution-practice/` | Graded tickets: 20+ junior, 12 mid-level, 6 senior projects, refactor katas. |
+| `06-contribution-practice/` | Graded tickets: 20 junior, 12 mid-level, 6 senior projects, 9 refactor/design katas. |
 | `07-career-and-collaboration/` | Code review mindset, PR/RFC writing, maintainer communication. |
-| `08-interview-prep/` | **First-class module.** 50+ question cards (≥60% anchored to this repo), a full system-design walkthrough, STAR stories, and a two-week cram plan. |
+| `08-interview-prep/` | **First-class module.** 38 question cards (14 JS/TS/Node, 12 frontend, 12 API/data), a full system-design walkthrough with 5 variation prompts, 5 timed debugging/review simulations, 10 STAR stories, and a two-week cram plan. That is 58 practice prompts in all, most anchored to this repo. |
 | `09-reference/` | Command cheatsheet, risk register, learning rubrics, and the running verification log. |
 
 ## How to use this over different time budgets

@@ -22,7 +22,7 @@ Grouped by severity. **[Confirmed]** = verified in code. **[Hypothesis]** = plau
 
 ### High
 
-- **[Confirmed] Fire-and-forget Kafka = silent data loss.** A broker outage drops events while returning 200 ([`kafka.ts:87-90`](../../src/lib/kafka.ts)). For a product whose entire value is not losing events, at-most-once delivery on the primary write path is the most serious architectural weakness. → *Migration path* below.
+- **[Confirmed] Fire-and-forget Kafka = silent data loss.** A broker outage at connect time drops events while returning 200 ([`kafka.ts:87-90`](../../src/lib/kafka.ts)). A failed first connect leaves the producer unset, so the loss persists until restart (`:95-98`). Post-connect send rejections escape the un-awaited `return` and 500 instead. Re-verified 2026-10-06. For a product whose entire value is not losing events, at-most-once delivery on the primary write path is the most serious architectural weakness. → *Migration path* below.
 
 - **[Confirmed] Per-handler authorization invites IDOR.** Authz is a manual `can*` call in each route; nothing enforces that every id-bearing route makes it. One forgotten check is a cross-tenant data leak. The risk is not any specific route (the ones reviewed are guarded) but the *absence of a systemic guarantee*.
 

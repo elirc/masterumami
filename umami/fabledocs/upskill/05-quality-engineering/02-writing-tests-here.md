@@ -157,15 +157,15 @@ Assert the chosen behavior when a downstream send fails.
 // Illustrative fake code: not from this repo
 import { expect, test, vi } from 'vitest';
 
-test('kafka send failure does not throw', async () => {
-  vi.mock('kafkajs'); // producer.send rejects
+test('kafka connect failure does not throw', async () => {
+  vi.mock('kafkajs'); // producer.connect rejects (NOT producer.send — see trap below)
   const kafka = (await import('@/lib/kafka')).default;
   await expect(kafka.sendMessage('event', { a: 1 })).resolves.toBeUndefined();
 });
 ```
 
 **Command:** `pnpm test src/lib/kafka.test.ts`
-**Trap:** this pins the *current* (swallow-and-return-undefined) behavior. If you implement the outbox fix, this test must change to assert the new guarantee — which is exactly the point of the test.
+**Trap (verified 2026-10-06):** if you mock `producer.send` to reject, this test *fails*. `sendMessage` returns the send promise without `await` (`kafka.ts:73`), so that rejection escapes the `catch`. Only `connect()`-phase failures are swallowed. A second test asserting that a send rejection *does* propagate pins that nuance. This test pins the *current* (swallow-and-return-undefined) behavior. If you implement the outbox fix, this test must change to assert the new guarantee — which is exactly the point of the test.
 **Real anchor:** [`kafka.ts:87-90`](../../src/lib/kafka.ts).
 
 ---

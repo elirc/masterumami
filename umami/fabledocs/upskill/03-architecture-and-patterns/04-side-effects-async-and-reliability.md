@@ -8,7 +8,7 @@ A **side effect** is anything a function does beyond returning a value: a DB wri
 | --- | --- | --- | --- |
 | Insert event (Postgres) | `saveEvent.ts:107` | Throws → caught by route try/catch → 500 | At-least-once (client may retry) |
 | Insert event (ClickHouse direct) | `saveEvent.ts:262` | Throws → 500 | At-least-once |
-| Publish event (Kafka) | `kafka.ts:73` | **Swallowed** (`console.log`) → 200 | **At-most-once (silent loss)** |
+| Publish event (Kafka) | `kafka.ts:73` | Connect-phase errors **swallowed** (`console.log`) → 200. A post-connect `send` rejection escapes (un-awaited `return`) → 500 | **At-most-once (silent loss on connect failure)** |
 | Insert session | `createSession.ts` | `on conflict do nothing` | Idempotent |
 | Insert event_data | `saveEventData.ts` | Throws → 500 | At-least-once, not atomic with event |
 | Insert revenue | `saveRevenue.ts` | Throws → 500 | At-least-once, not atomic with event |
@@ -33,6 +33,14 @@ The one place reliability is genuinely weak. `sendMessage` catches and swallows 
 - The event is dropped.
 - `/api/send` still returns 200 (the caller thinks it succeeded).
 - Nothing retries; there's no dead-letter queue or outbox.
+
+**Precision check (re-verified 2026-10-06).** The `try` holds `return producer.send(...)` with no `await` (`kafka.ts:73`). In an async function, returning a promise from inside `try` does not route its rejection to the local `catch`; you need `return await`. So:
+
+- **Swallowed:** failures inside `await connect()`, such as the first `producer.connect()` to an unreachable broker, plus any synchronous throw.
+- **Not swallowed:** a rejection from `producer.send` after connecting. It reaches `await sendMessage(...)` in `saveEvent.ts:260`, then the route's catch, and comes back as a 500.
+- **The sticky failure:** `connect()` sets `kafka` before awaiting `getProducer()` (`kafka.ts:95-98`). If that first connect fails, `kafka` is truthy and `producer` is undefined forever. Every later call skips reconnecting, throws a `TypeError` on `producer.send`, and that error is swallowed. One startup blip turns into silent loss until the process restarts.
+
+The silent-loss conclusion holds; the trigger is narrower and stickier than "any broker hiccup." Spotting `return` vs `return await` inside `try` is a classic code-review and interview catch.
 
 This is **at-most-once** delivery for the product's core data. It's the canonical "fire-and-forget" pitfall ([Pattern 14](05-pattern-catalog.md#pattern-14-fire-and-forget-side-effect)). The stronger designs, in order of effort:
 

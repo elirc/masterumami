@@ -28,9 +28,9 @@ Index:
 
 **General shape:** A function returns a map keyed by backend; a dispatcher picks one entry based on config and invokes it.
 
-**Real example:** [`src/lib/db.ts:22-36`](../../src/lib/db.ts) — `runQuery({ [PRISMA]: fn, [CLICKHOUSE]: fn, [KAFKA]: fn })` picks by `CLICKHOUSE_URL`/`DATABASE_URL`.
+**Real example:** [`src/lib/db.ts:22-36`](../../../src/lib/db.ts) — `runQuery({ [PRISMA]: fn, [CLICKHOUSE]: fn, [KAFKA]: fn })` picks by `CLICKHOUSE_URL`/`DATABASE_URL`.
 
-**Second example:** Every write/read query uses it: [`saveEvent.ts:65-70`](../../src/queries/sql/events/saveEvent.ts), [`getWebsiteStats.ts:20-24`](../../src/queries/sql/getWebsiteStats.ts).
+**Second example:** Every write/read query uses it: [`saveEvent.ts:65-70`](../../../src/queries/sql/events/saveEvent.ts), [`getWebsiteStats.ts:20-24`](../../../src/queries/sql/getWebsiteStats.ts).
 
 **Why this implementation works:** Each query file colocates both implementations (`relationalQuery` and `clickhouseQuery`), so the two stay visible side by side; the dispatcher is trivial and central.
 
@@ -50,13 +50,13 @@ Index:
 
 **General shape:** SQL written with named placeholders; a small engine rewrites placeholders to positional bind parameters and passes values separately.
 
-**Real example:** [`src/lib/prisma.ts:255-282`](../../src/lib/prisma.ts) — `rawQuery` turns `{{name::type}}` into `$1,$2,...` (`:268-276`) then calls `$queryRawUnsafe(query, ...params)`.
+**Real example:** [`src/lib/prisma.ts:255-282`](../../../src/lib/prisma.ts) — `rawQuery` turns `{{name::type}}` into `$1,$2,...` (`:268-276`) then calls `$queryRawUnsafe(query, ...params)`.
 
-**Second example:** ClickHouse equivalent uses `{name:Type}` binding — [`src/lib/clickhouse.ts:73-99`](../../src/lib/clickhouse.ts).
+**Second example:** ClickHouse equivalent uses `{name:Type}` binding — [`src/lib/clickhouse.ts:73-99`](../../../src/lib/clickhouse.ts).
 
 **Why this implementation works:** Values never touch the SQL string; only the *shape* of the query is dynamic. `$queryRawUnsafe` is "unsafe" about the text, not the values.
 
-**Failure modes:** Anything interpolated *outside* the placeholder mechanism is unprotected — e.g. `order by ${orderBy}` in `pagedRawQuery` ([`prisma.ts:318-323`](../../src/lib/prisma.ts)). Today no route feeds user input there, but it's a latent injection surface (see `09-reference/risk-register.md`).
+**Failure modes:** Anything interpolated *outside* the placeholder mechanism is unprotected — e.g. `order by ${orderBy}` in `pagedRawQuery` ([`prisma.ts:318-323`](../../../src/lib/prisma.ts)). Today no route feeds user input there, but it's a latent injection surface (see `09-reference/risk-register.md`).
 
 **Use it when:** ORM expressiveness is the bottleneck. **Avoid it when:** a query builder covers the case — you lose type safety here.
 
@@ -72,13 +72,13 @@ Index:
 
 **General shape:** On read, check cache; miss → query source, populate cache. On delete, write a tombstone value rather than just removing the key, so a concurrent repopulate doesn't resurrect it.
 
-**Real example:** [`src/lib/redis.ts:84-102`](../../src/lib/redis.ts) — `fetch()` is cache-aside; `remove(key, soft=true)` writes `__DELETED__`; `fetch` returns `null` for a tombstone (`:87`).
+**Real example:** [`src/lib/redis.ts:84-102`](../../../src/lib/redis.ts) — `fetch()` is cache-aside; `remove(key, soft=true)` writes `__DELETED__`; `fetch` returns `null` for a tombstone (`:87`).
 
-**Second example:** [`src/lib/load.ts:6-20`](../../src/lib/load.ts) — `fetchWebsite` wraps `getWebsite` in `redis.client.fetch(..., 86400)`.
+**Second example:** [`src/lib/load.ts:6-20`](../../../src/lib/load.ts) — `fetchWebsite` wraps `getWebsite` in `redis.client.fetch(..., 86400)`.
 
 **Why this implementation works:** The tombstone closes the race where a delete and a cache-miss-repopulate interleave and the deleted value comes back.
 
-**Failure modes:** 24h TTL means a non-tombstoned change (e.g. `replayEnabled`) can be stale for a day — which is exactly why `/api/record` bypasses this cache ([`record/route.ts:56`](../../src/app/api/record/route.ts)). Choosing between "cache it" and "read fresh" is a per-flow decision.
+**Failure modes:** 24h TTL means a non-tombstoned change (e.g. `replayEnabled`) can be stale for a day — which is exactly why `/api/record` bypasses this cache ([`record/route.ts:56`](../../../src/app/api/record/route.ts)). Choosing between "cache it" and "read fresh" is a per-flow decision.
 
 **Use it when:** reads dominate and the source is expensive. **Avoid it when:** the value must always be current and you can't tolerate TTL staleness.
 
@@ -94,9 +94,9 @@ Index:
 
 **General shape:** Identity = a stable hash of quasi-identifiers (IP, UA) plus a rotating salt, so the same visitor maps to the same id *within a window* but can't be tracked across windows or reversed to PII.
 
-**Real example:** [`src/app/api/send/route.ts:143-147`](../../src/app/api/send/route.ts) — `sessionId = uuid(sourceId, ip, userAgent, sessionSalt)`; `getSalt` rotates monthly by default ([`crypto.ts:72-78`](../../src/lib/crypto.ts)). `uuid(...)` is a v5 hash ([`crypto.ts:60-66`](../../src/lib/crypto.ts)).
+**Real example:** [`src/app/api/send/route.ts:143-147`](../../../src/app/api/send/route.ts) — `sessionId = uuid(sourceId, ip, userAgent, sessionSalt)`; `getSalt` rotates monthly by default ([`crypto.ts:72-78`](../../../src/lib/crypto.ts)). `uuid(...)` is a v5 hash ([`crypto.ts:60-66`](../../../src/lib/crypto.ts)).
 
-**Second example:** `visitId = uuid(sessionId, visitSalt)` with an hourly salt ([`send/route.ts:145,168`](../../src/app/api/send/route.ts)).
+**Second example:** `visitId = uuid(sessionId, visitSalt)` with an hourly salt ([`send/route.ts:145,168`](../../../src/app/api/send/route.ts)).
 
 **Why this implementation works:** No cookie to consent to; rotating the salt breaks cross-period linkage; the hash is one-way.
 
@@ -116,7 +116,7 @@ Index:
 
 **General shape:** Server signs `{state}` → client stores it → client returns it on the next request → server verifies signature and trusts the state to skip work.
 
-**Real example:** [`src/app/api/send/route.ts:104-112`](../../src/app/api/send/route.ts) reads `x-umami-cache`; [`:311-313`](../../src/app/api/send/route.ts) issues a fresh one; the tracker stores it ([`tracker/index.js:189`](../../src/tracker/index.js)).
+**Real example:** [`src/app/api/send/route.ts:104-112`](../../../src/app/api/send/route.ts) reads `x-umami-cache`; [`:311-313`](../../../src/app/api/send/route.ts) issues a fresh one; the tracker stores it ([`tracker/index.js:189`](../../../src/tracker/index.js)).
 
 **Why this implementation works:** The token is signed with `secret()` (`jwt.createToken`), so a client can't forge new state — only replay what the server issued.
 
@@ -136,7 +136,7 @@ Index:
 
 **General shape:** A shared function validates input and authenticates; the handler then performs an explicit authorization check for the specific resource.
 
-**Real example:** [`src/lib/request.ts:12-53`](../../src/lib/request.ts) does validate + authenticate; handlers add authz, e.g. [`websites/[websiteId]/route.ts:28`](../../src/app/api/websites/[websiteId]/route.ts) `if (!(await canViewWebsite(auth, websiteId))) return unauthorized()`.
+**Real example:** [`src/lib/request.ts:12-53`](../../../src/lib/request.ts) does validate + authenticate; handlers add authz, e.g. [`websites/[websiteId]/route.ts:28`](../../../src/app/api/websites/[websiteId]/route.ts) `if (!(await canViewWebsite(auth, websiteId))) return unauthorized()`.
 
 **Why this implementation works:** Validation and authentication are centralized (hard to forget); authorization stays in the handler because only the handler knows *which* resource.
 
@@ -156,13 +156,13 @@ Index:
 
 **General shape:** A `permissions/` module exports `canDoX(auth, ...ids)` functions, each encoding the ownership/role rules for one capability.
 
-**Real example:** [`src/permissions/website.ts`](../../src/permissions/website.ts) — `canViewWebsite`, `canUpdateWebsite`, `canDeleteWebsite`, `canTransferWebsiteToTeam`, etc., all following admin → ownership → team-role.
+**Real example:** [`src/permissions/website.ts`](../../../src/permissions/website.ts) — `canViewWebsite`, `canUpdateWebsite`, `canDeleteWebsite`, `canTransferWebsiteToTeam`, etc., all following admin → ownership → team-role.
 
-**Second example:** [`src/permissions/team.ts`](../../src/permissions/team.ts), `src/permissions/index.ts` (barrel).
+**Second example:** [`src/permissions/team.ts`](../../../src/permissions/team.ts), `src/permissions/index.ts` (barrel).
 
 **Why this implementation works:** Each predicate is testable in isolation and reused across routes; the pattern (admin bypass, then owner, then team-role via `hasPermission`) is uniform.
 
-**Failure modes:** `canViewWebsite` and `canUpdateWebsite` re-fetch the entity independently (`getEntity` vs `getWebsite`) — subtle divergence risk. The role-permission matrix ([`constants.ts:186-217`](../../src/lib/constants.ts)) is a second source of truth that must stay in sync.
+**Failure modes:** `canViewWebsite` and `canUpdateWebsite` re-fetch the entity independently (`getEntity` vs `getWebsite`) — subtle divergence risk. The role-permission matrix ([`constants.ts:186-217`](../../../src/lib/constants.ts)) is a second source of truth that must stay in sync.
 
 **Use it when:** more than a couple of resources have ownership rules. **Avoid it when:** a single trivial check — inline is fine.
 
@@ -178,7 +178,7 @@ Index:
 
 **General shape:** Import another route's exported handler and call it with a synthetic request.
 
-**Real example:** [`p/[slug]/route.ts:60`](../../src/app/(collect)/p/[slug]/route.ts) and [`q/[slug]/route.ts:58`](../../src/app/(collect)/q/[slug]/route.ts) call `POST(req)` from `send/route.ts`; [`batch/route.ts:36`](../../src/app/api/batch/route.ts) calls `send.POST` per item.
+**Real example:** [`p/[slug]/route.ts:60`](../../../src/app/(collect)/p/[slug]/route.ts) and [`q/[slug]/route.ts:58`](../../../src/app/(collect)/q/[slug]/route.ts) call `POST(req)` from `send/route.ts`; [`batch/route.ts:36`](../../../src/app/api/batch/route.ts) calls `send.POST` per item.
 
 **Why this implementation works:** Next.js route handlers are plain async functions — reusing them avoids reimplementing validation and persistence.
 
@@ -198,7 +198,7 @@ Index:
 
 **General shape:** `INSERT ... ON CONFLICT (pk) DO NOTHING`.
 
-**Real example:** [`src/queries/sql/sessions/createSession.ts:39`](../../src/queries/sql/sessions/createSession.ts).
+**Real example:** [`src/queries/sql/sessions/createSession.ts:39`](../../../src/queries/sql/sessions/createSession.ts).
 
 **Why this implementation works:** Because `sessionId` is deterministic (Pattern 4), repeated inserts collide on the primary key and are no-ops — the write is idempotent.
 
@@ -218,7 +218,7 @@ Index:
 
 **General shape:** A Zod `discriminatedUnion` on a `type` field routes to the correct sub-schema.
 
-**Real example:** [`src/lib/schema.ts:279-289`](../../src/lib/schema.ts) — `reportTypeSchema` unions goal/funnel/journey/performance/retention/utm/revenue/attribution/breakdown, each its own object with a literal `type`.
+**Real example:** [`src/lib/schema.ts:279-289`](../../../src/lib/schema.ts) — `reportTypeSchema` unions goal/funnel/journey/performance/retention/utm/revenue/attribution/breakdown, each its own object with a literal `type`.
 
 **Why this implementation works:** The discriminant makes validation precise and errors specific; adding a report type is a localized change.
 
@@ -238,7 +238,7 @@ Index:
 
 **General shape:** A `useQuery` hook with a `queryKey` array that includes every input that changes the result; `queryFn` calls the API.
 
-**Real example:** [`useWebsiteMetricsQuery.ts:21-42`](../../src/components/hooks/queries/useWebsiteMetricsQuery.ts) — key = `['websites:metrics', {websiteId, startAt, endAt, ...filters, ...params}]`, `placeholderData: keepPreviousData`.
+**Real example:** [`useWebsiteMetricsQuery.ts:21-42`](../../../src/components/hooks/queries/useWebsiteMetricsQuery.ts) — key = `['websites:metrics', {websiteId, startAt, endAt, ...filters, ...params}]`, `placeholderData: keepPreviousData`.
 
 **Second example:** 60+ sibling hooks in `src/components/hooks/queries/`.
 
@@ -260,7 +260,7 @@ Index:
 
 **General shape:** Store the client on `globalThis` in non-production and reuse it.
 
-**Real example:** [`prisma.ts:390,413,418`](../../src/lib/prisma.ts) (`globalThis[PRISMA] ??= ...`); [`redis.ts:144-151`](../../src/lib/redis.ts); [`clickhouse.ts:41-43`](../../src/lib/clickhouse.ts); [`kafka.ts:44-46`](../../src/lib/kafka.ts).
+**Real example:** [`prisma.ts:390,413,418`](../../../src/lib/prisma.ts) (`globalThis[PRISMA] ??= ...`); [`redis.ts:144-151`](../../../src/lib/redis.ts); [`clickhouse.ts:41-43`](../../../src/lib/clickhouse.ts); [`kafka.ts:44-46`](../../../src/lib/kafka.ts).
 
 **Why this implementation works:** One client survives hot reloads; production creates it once normally.
 
@@ -280,7 +280,7 @@ Index:
 
 **General shape:** Reduce over the steps, emitting one CTE per step that joins the previous step within a time window, then union the counts.
 
-**Real example:** [`src/queries/sql/reports/getFunnel.ts:95-176`](../../src/queries/sql/reports/getFunnel.ts) — `getFunnelQuery` builds `level1..levelN` CTEs; step values bound as `{{i}}` params (`:163`), filters bound too (`:69-90`).
+**Real example:** [`src/queries/sql/reports/getFunnel.ts:95-176`](../../../src/queries/sql/reports/getFunnel.ts) — `getFunnelQuery` builds `level1..levelN` CTEs; step values bound as `{{i}}` params (`:163`), filters bound too (`:69-90`).
 
 **Why this implementation works:** Steps and filter values are still parameterized (Pattern 2); only the *structure* (number of CTEs) is dynamic. Zod caps steps at 2–8 (`schema.ts:193-194`), bounding the generated SQL.
 
@@ -300,7 +300,7 @@ Index:
 
 **General shape:** Send asynchronously; catch and log errors instead of propagating them.
 
-**Real example:** [`src/lib/kafka.ts:66-91`](../../src/lib/kafka.ts) — `sendMessage` wraps `producer.send` in try/catch and only `console.log`s on failure (`:87-90`).
+**Real example:** [`src/lib/kafka.ts:66-91`](../../../src/lib/kafka.ts) — `sendMessage` wraps `producer.send` in try/catch and only `console.log`s on failure (`:87-90`). Precisely, the catch covers `connect()` failures. The `send` promise is returned without `await`, so its own rejection escapes to the caller (see [04-side-effects](04-side-effects-async-and-reliability.md#the-reliability-gap-fire-and-forget-kafka)).
 
 **Why this implementation works (and doesn't):** It keeps the collection path fast and resilient to broker hiccups. But it means **a Kafka outage silently drops events** with a success response — no outbox, no retry, no visibility.
 
@@ -320,7 +320,7 @@ Index:
 
 **General shape:** Early-return guard reading a plan/config flag at the top of the handler.
 
-**Real example:** [`record/route.ts:67-77`](../../src/app/api/record/route.ts) — `if (process.env.CLOUD_MODE) { ...require business subscription... }`. Also `setWebsiteDate` clamps history for non-subscribers ([`request.ts:92-109`](../../src/lib/request.ts)).
+**Real example:** [`record/route.ts:67-77`](../../../src/app/api/record/route.ts) — `if (process.env.CLOUD_MODE) { ...require business subscription... }`. Also `setWebsiteDate` clamps history for non-subscribers ([`request.ts:92-109`](../../../src/lib/request.ts)).
 
 **Why this implementation works:** Gates live at the boundary, close to the request, and fail closed (`403`/clamped range).
 
@@ -340,9 +340,9 @@ Index:
 
 **General shape:** Sign a JWT, then encrypt the whole thing; reverse on read.
 
-**Real example:** [`src/lib/jwt.ts:16-26`](../../src/lib/jwt.ts) — `createSecureToken` = `encrypt(createToken(...))`; `parseSecureToken` decrypts then verifies. Encryption is AES-256-GCM ([`crypto.ts:18-46`](../../src/lib/crypto.ts)).
+**Real example:** [`src/lib/jwt.ts:16-26`](../../../src/lib/jwt.ts) — `createSecureToken` = `encrypt(createToken(...))`; `parseSecureToken` decrypts then verifies. Encryption is AES-256-GCM ([`crypto.ts:18-46`](../../../src/lib/crypto.ts)).
 
-**Contrast:** The share/cache tokens use plain `createToken`/`parseToken` (signed only) because their contents (granted ids) aren't secret — [`share/[slug]/route.ts:94`](../../src/app/api/share/[slug]/route.ts).
+**Contrast:** The share/cache tokens use plain `createToken`/`parseToken` (signed only) because their contents (granted ids) aren't secret — [`share/[slug]/route.ts:94`](../../../src/app/api/share/[slug]/route.ts).
 
 **Why this implementation works:** Auth tokens (carrying `userId`/`role`) are encrypted so a client can't read or diff them; public-scope tokens are only signed.
 

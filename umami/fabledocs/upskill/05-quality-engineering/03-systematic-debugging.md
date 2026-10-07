@@ -38,7 +38,7 @@ Tools you actually have here: Node/Next server logs, `debug` namespaces (`umami:
 **Narrowing path:**
 1. Confirm the events aren't in ClickHouse at all → write-side loss.
 2. Trace the write: `saveEvent` ClickHouse branch sends via Kafka when enabled ([`saveEvent.ts:259-263`](../../src/queries/sql/events/saveEvent.ts)).
-3. Read `sendMessage` ([`kafka.ts:66-91`](../../src/lib/kafka.ts)): it wraps `producer.send` in try/catch and only `console.log`s on failure — returning `undefined`, not throwing.
+3. Read `sendMessage` ([`kafka.ts:66-91`](../../src/lib/kafka.ts)): it wraps `producer.send` in try/catch and only `console.log`s on failure — returning `undefined`, not throwing. Note what the catch actually covers: `connect()` failures. The send promise is returned un-awaited, so a post-connect send rejection would 500 instead. A failed *first* connect leaves `producer` undefined (`kafka.ts:95-98`), so every later send is swallowed until restart. That fits "briefly unreachable, but events stay missing."
 
 **Useful probes:** Grep server logs for `KAFKA ERROR`. Their presence, alongside 200 responses to `/api/send`, confirms it.
 

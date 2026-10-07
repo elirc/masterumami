@@ -4,7 +4,9 @@ Every major web-security concern mapped to Umami's real code, with a pre-merge c
 
 ## Authorization / IDOR — the #1 concern
 
-**Protection:** authenticate in `parseRequest`, then an explicit `canViewWebsite`/`canUpdate*`/`canDelete*` per handler ([`permissions/website.ts:7`](../../src/permissions/website.ts), called e.g. [`websites/[websiteId]/route.ts:28`](../../src/app/api/websites/[websiteId]/route.ts)).
+**Protection:** authenticate in `parseRequest`, then an explicit `canViewWebsite`/`canUpdate*`/`canDelete*` per handler ([`permissions/website.ts:7`](../../../src/permissions/website.ts), called e.g. [`websites/[websiteId]/route.ts:28`](../../../src/app/api/websites/[websiteId]/route.ts)).
+
+**State as of 2026-10-06 (static sweep):** there are 59 dynamic-segment routes under `src/app/api`. 56 call a `can*` helper. `users/[userId]/teams` and `users/[userId]/websites` guard inline with a self-or-admin check, and `share/[slug]` is public by design. No unguarded route was found. Use this as the baseline for the IDOR audit drill.
 
 **Gap:** the check is manual and per-route. A new `[id]` route that forgets it is an IDOR. There's no systemic enforcement. **Mitigation:** the `withAuthorization` wrapper / lint-rule idea in the [architecture critique](../03-architecture-and-patterns/06-architecture-critique.md).
 
@@ -12,17 +14,17 @@ Every major web-security concern mapped to Umami's real code, with a pre-merge c
 
 ## Input validation
 
-**Protection:** Zod schemas at every route via `parseRequest` ([`request.ts:23-42`](../../src/lib/request.ts)); `schema.ts` holds the contracts; cross-field `.refine`s enforce invariants; write-time `substring` truncation guards column widths ([`saveEvent.ts:113-131`](../../src/queries/sql/events/saveEvent.ts)).
+**Protection:** Zod schemas at every route via `parseRequest` ([`request.ts:23-42`](../../../src/lib/request.ts)); `schema.ts` holds the contracts; cross-field `.refine`s enforce invariants; write-time `substring` truncation guards column widths ([`saveEvent.ts:113-131`](../../../src/queries/sql/events/saveEvent.ts)).
 
-**Gap:** suffixed filters (`browser1`) are re-added *after* Zod, unvalidated ([`request.ts:33-38`](../../src/lib/request.ts)); report `parameters` use `anyObjectParam` in the save path.
+**Gap:** suffixed filters (`browser1`) are re-added *after* Zod, unvalidated ([`request.ts:33-38`](../../../src/lib/request.ts)); report `parameters` use `anyObjectParam` in the save path.
 
 **Check:** all external input passes a schema; no field bypasses validation before reaching a query or the DB.
 
 ## SQL injection
 
-**Protection:** the raw-SQL engine binds values via `{{param}}`→`$n` ([`prisma.ts:268-276`](../../src/lib/prisma.ts)); ClickHouse uses `{param:Type}` binding. Values are never concatenated into SQL.
+**Protection:** the raw-SQL engine binds values via `{{param}}`→`$n` ([`prisma.ts:268-276`](../../../src/lib/prisma.ts)); ClickHouse uses `{param:Type}` binding. Values are never concatenated into SQL.
 
-**Gap (possible risk, labelled):** `pagedRawQuery` interpolates `order by ${orderBy}` directly ([`prisma.ts:318-323`](../../src/lib/prisma.ts)). Not currently reachable with user input, but a latent injection surface. **Mitigation:** allow-list sortable columns (Ticket 6, critique #4).
+**Gap (possible risk, labelled):** `pagedRawQuery` interpolates `order by ${orderBy}` directly ([`prisma.ts:318-323`](../../../src/lib/prisma.ts)), and the ClickHouse `pagedRawQuery` does the same ([`clickhouse.ts:250`](../../../src/lib/clickhouse.ts)). Not currently reachable with user input: `sortingParams` (`schema.ts:82-84`) is never imported by a route. Still, it is a latent injection surface. **Mitigation:** allow-list sortable columns (Ticket 6, critique #4).
 
 **Check:** no user value inside a SQL template string; only bound parameters. Any dynamic identifier (column/table/order) comes from an allow-list.
 
@@ -34,7 +36,7 @@ Every major web-security concern mapped to Umami's real code, with a pre-merge c
 
 ## CSRF
 
-**Protection:** the API is authenticated by a **bearer token in the `Authorization` header** (from localStorage, [`useApi.ts:31`](../../src/components/hooks/useApi.ts)), not a cookie. CSRF fundamentally relies on the browser auto-attaching credentials (cookies); a header token isn't auto-attached, so classic CSRF doesn't apply to the authed API.
+**Protection:** the API is authenticated by a **bearer token in the `Authorization` header** (from localStorage, [`useApi.ts:31`](../../../src/components/hooks/useApi.ts)), not a cookie. CSRF fundamentally relies on the browser auto-attaching credentials (cookies); a header token isn't auto-attached, so classic CSRF doesn't apply to the authed API.
 
 **Tradeoff:** the cost of that CSRF-immunity is XSS exposure — a token in localStorage is readable by any injected script. So the security model trades CSRF risk for XSS risk; the CSP is what backstops the XSS side. Being able to state that tradeoff is a strong interview answer.
 
@@ -42,29 +44,29 @@ Every major web-security concern mapped to Umami's real code, with a pre-merge c
 
 ## SSRF (server-side request forgery)
 
-**Consideration:** the server makes outbound requests for geo/country-name downloads (build scripts) and, in cloud mode, reads proxy headers. The collection endpoint parses user-supplied URLs (`new URL(url, base)`, [`send/route.ts:179`](../../src/app/api/send/route.ts)) but only to *parse* them, not to fetch them — so no SSRF from event URLs. **Check:** if you ever add a feature that *fetches* a user-supplied URL (webhooks, link previews), add SSRF protections (block internal ranges).
+**Consideration:** the server makes outbound requests for geo/country-name downloads (build scripts) and, in cloud mode, reads proxy headers. The collection endpoint parses user-supplied URLs (`new URL(url, base)`, [`send/route.ts:179`](../../../src/app/api/send/route.ts)) but only to *parse* them, not to fetch them — so no SSRF from event URLs. **Check:** if you ever add a feature that *fetches* a user-supplied URL (webhooks, link previews), add SSRF protections (block internal ranges).
 
 ## Secrets management
 
-**Protection:** `APP_SECRET` drives token signing/encryption ([`crypto.ts:56-57`](../../src/lib/crypto.ts)); `check-env.js` validates required env at build; secrets live in env, not code. Tokens carrying user identity are *encrypted*, not just signed ([`jwt.ts:16`](../../src/lib/jwt.ts)).
+**Protection:** `APP_SECRET` drives token signing/encryption ([`crypto.ts:56-57`](../../../src/lib/crypto.ts)); `check-env.js` validates required env at build; secrets live in env, not code. Tokens carrying user identity are *encrypted*, not just signed ([`jwt.ts:16`](../../../src/lib/jwt.ts)).
 
 **Check:** no secret in code/logs; `serializeError` output isn't returned to clients in a way that leaks config (it currently can — see Error handling).
 
 ## Passwords & auth
 
-**Protection:** bcrypt hashing (`checkPassword`/`hashPassword`, `lib/password.ts`); uniform bad-user/bad-password error to prevent enumeration ([`login/route.ts:28-29`](../../src/app/api/auth/login/route.ts)); PBKDF2 for token key derivation ([`crypto.ts:16`](../../src/lib/crypto.ts)).
+**Protection:** bcrypt hashing (`checkPassword`/`hashPassword`, `lib/password.ts`); uniform bad-user/bad-password error to prevent enumeration ([`login/route.ts:28-29`](../../../src/app/api/auth/login/route.ts)); PBKDF2 for token key derivation ([`crypto.ts:16`](../../../src/lib/crypto.ts)).
 
 **Gap:** no rate limiting on login (`redis.rateLimit` exists, uncalled) — brute-force exposure. **Check:** consider IP-based login throttling (Review Kata 5).
 
 ## Bot & abuse filtering
 
-**Protection:** `isbot(userAgent)` drops bot traffic ([`send/route.ts:131`](../../src/app/api/send/route.ts)); `hasBlockedIp` supports exact + CIDR IP blocking ([`detect.ts:140-170`](../../src/lib/detect.ts)).
+**Protection:** `isbot(userAgent)` drops bot traffic ([`send/route.ts:131`](../../../src/app/api/send/route.ts)); `hasBlockedIp` supports exact + CIDR IP blocking ([`detect.ts:140-170`](../../../src/lib/detect.ts)).
 
 **Gap:** no rate limiting on the open collection endpoints; `/batch` amplifies (Ticket 10). **Check:** ingest has volume protection (app or infra).
 
 ## Information disclosure
 
-**Gap (labelled):** collection catch blocks return `serializeError(e)` to the client ([`send/route.ts:320`](../../src/app/api/send/route.ts)) — a serialized error (potentially stack/query fragments) sent to an unauthenticated caller. **Mitigation:** log server-side, return a generic message + id (Review Kata 4).
+**Gap (labelled):** collection catch blocks return `serializeError(e)` to the client ([`send/route.ts:320`](../../../src/app/api/send/route.ts)) — a serialized error (potentially stack/query fragments) sent to an unauthenticated caller. **Mitigation:** log server-side, return a generic message + id (Review Kata 4).
 
 ## Data trust (analytics-specific)
 

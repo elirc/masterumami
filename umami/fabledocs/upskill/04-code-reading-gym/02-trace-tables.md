@@ -75,7 +75,7 @@ Six traces, covering UI→API, persistence, auth, error, a report, and a cache p
 | 4 | `send/route.ts:318` | log line | server | `console.log(error)` | no metric/alert |
 | 5 | `send/route.ts:320` | 500 + `errorObject` | server | `serverError(...)` | **leaks internals to client** |
 
-**Self-check:** what does the *Kafka* failure path do differently at step 2? (It never reaches here — `sendMessage` swallows the error, so the request returns 200. Trace 4 only fires for the *synchronous* insert paths.)
+**Self-check:** what does the *Kafka* failure path do differently at step 2? (It depends on the failure. A `connect()`-phase failure never reaches here: `sendMessage` swallows it and the request returns 200. A post-connect `producer.send` rejection *does* reach this catch, because `sendMessage` returns the send promise without `await` (`kafka.ts:73`), so it becomes a 500.)
 
 ---
 

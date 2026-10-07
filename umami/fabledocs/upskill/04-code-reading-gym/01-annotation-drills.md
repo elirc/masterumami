@@ -190,9 +190,9 @@ async function sendMessage(topic, message) {
 - **Dependencies:** `connect`, a module-level `producer`.
 - **Invariant:** *none guaranteed* — delivery is best-effort.
 - **Side effects:** network send to Kafka; console log on error.
-- **Failure modes:** a broker outage is swallowed → **silent event loss with a success response** upstream; `acks: 1` means no full-replication guarantee.
+- **Failure modes:** a broker outage during `connect()` is swallowed → **silent event loss with a success response** upstream; `acks: 1` means no full-replication guarantee. Subtler: `return producer.send(...)` is not awaited, so a *post-connect* send rejection escapes the `catch` and surfaces as a 500. And because `connect()` sets `kafka` before `getProducer()` resolves (`kafka.ts:95-98`), one failed first connect leaves `producer` undefined. Every later call then hits a swallowed `TypeError`.
 
-**Self-grade:** *Solid* if you saw errors are swallowed. *Strong* if you connected it to at-most-once delivery and the upstream 200 response, and named the outbox alternative.
+**Self-grade:** *Solid* if you saw errors are swallowed. *Strong* if you connected it to at-most-once delivery and the upstream 200 response, and named the outbox alternative. *Senior* if you also caught the `return` vs `return await` gap and the sticky half-initialised state.
 
 ---
 
