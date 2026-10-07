@@ -21,7 +21,7 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 - [ ] Sets/clears `process.env.IGNORE_IP` per case.
 - [ ] `pnpm test` green.
 
-**Read first:** [`src/lib/detect.ts:140-170`](../../src/lib/detect.ts); mirror style of [`src/lib/detect.test.ts`](../../src/lib/detect.test.ts).
+**Read first:** [`src/lib/detect.ts:140-170`](../../../src/lib/detect.ts); mirror style of [`src/lib/detect.test.ts`](../../../src/lib/detect.test.ts).
 
 **Files touched:** `src/lib/detect.test.ts` (extend).
 
@@ -47,7 +47,7 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 - [ ] Test that a 60-char name is stored as 50 chars.
 - [ ] Uses a mock/spy on the prisma client rather than a real DB.
 
-**Read first:** [`saveEvent.ts:131`](../../src/queries/sql/events/saveEvent.ts), [`constants.ts:257`](../../src/lib/constants.ts).
+**Read first:** [`saveEvent.ts:131`](../../../src/queries/sql/events/saveEvent.ts), [`constants.ts:257`](../../../src/lib/constants.ts).
 
 **Files touched:** new `src/queries/sql/events/saveEvent.test.ts`.
 
@@ -65,7 +65,7 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 
 **Story:** As a maintainer, I want the synthetic base URL defined once.
 
-**Why good:** The literal appears 3× in `send/route.ts` ([`:178`, `:283`](../../src/app/api/send/route.ts)) and in `schema.ts:95`. Follows the constants pattern.
+**Why good:** The literal appears 3× in `send/route.ts` ([`:178`, `:283`](../../../src/app/api/send/route.ts)) and in `schema.ts:95`. Follows the constants pattern.
 
 **Acceptance criteria:**
 - [ ] One exported constant; all uses reference it.
@@ -85,7 +85,7 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 
 **Story:** Group the flat `test()`s and add a case for an unknown component name.
 
-**Read first:** [`src/lib/boards.test.ts`](../../src/lib/boards.test.ts), [`src/lib/boards.ts`](../../src/lib/boards.ts).
+**Read first:** [`src/lib/boards.test.ts`](../../../src/lib/boards.test.ts), [`src/lib/boards.ts`](../../../src/lib/boards.ts).
 
 **Acceptance criteria:** New case asserts `isBoardComponentSupported('Nonexistent', ...)` behavior; tests still pass.
 
@@ -101,14 +101,14 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 
 **Story:** As a maintainer, I want to reject absurd page sizes so a client can't request 10M rows.
 
-**Why good:** `pagingParams.pageSize` is `positive()` with no max ([`schema.ts:79`](../../src/lib/schema.ts)); unbounded page size is a real query-cost risk.
+**Why good:** `pagingParams.pageSize` is `positive()` with no max ([`schema.ts:79`](../../../src/lib/schema.ts)); unbounded page size is a real query-cost risk.
 
 **Acceptance criteria:**
 - [ ] `pageSize` capped (e.g. `.max(1000)`).
 - [ ] A test asserts oversized values are rejected.
 - [ ] Confirm no existing route legitimately needs >cap.
 
-**Read first:** `schema.ts:77-80`; how `pagedRawQuery` uses size ([`prisma.ts:313-316`](../../src/lib/prisma.ts)).
+**Read first:** `schema.ts:77-80`; how `pagedRawQuery` uses size ([`prisma.ts:313-316`](../../../src/lib/prisma.ts)).
 
 **What could go wrong:** Some internal caller might pass a large size on purpose — grep usages first. Choose the cap with evidence.
 
@@ -125,7 +125,7 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 **Why good:** Documents a real risk (see risk register) without changing behavior — the safest possible first step.
 
 **Acceptance criteria:**
-- [ ] A comment at [`prisma.ts:318-323`](../../src/lib/prisma.ts) stating `orderBy` must be from a trusted allow-list, never raw user input.
+- [ ] A comment at [`prisma.ts:318-323`](../../../src/lib/prisma.ts) stating `orderBy` must be from a trusted allow-list, never raw user input.
 - [ ] No code change.
 
 **Read first:** the risk register entry; confirm current callers don't pass user `orderBy`.
@@ -142,7 +142,7 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 
 **Story:** Cover the JSON-to-typed-rows flattening used by every custom event.
 
-**Read first:** [`src/lib/data.ts`](../../src/lib/data.ts) (`flattenJSON`, `getStringValue`), used at [`saveEventData.ts:30-43`](../../src/queries/sql/events/saveEventData.ts).
+**Read first:** [`src/lib/data.ts`](../../../src/lib/data.ts) (`flattenJSON`, `getStringValue`), used at [`saveEventData.ts:30-43`](../../../src/queries/sql/events/saveEventData.ts).
 
 **Acceptance criteria:** Tests for nested objects, arrays, numbers, dates, and how each maps to `dataType`.
 
@@ -158,7 +158,7 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 
 **Story:** Ensure hooks that need a `websiteId` set `enabled: !!websiteId` so they don't fire with `undefined`.
 
-**Read first:** the pattern in [`useWebsiteMetricsQuery.ts:39`](../../src/components/hooks/queries/useWebsiteMetricsQuery.ts); audit siblings in `src/components/hooks/queries/`.
+**Read first:** the pattern in [`useWebsiteMetricsQuery.ts:39`](../../../src/components/hooks/queries/useWebsiteMetricsQuery.ts); audit siblings in `src/components/hooks/queries/`.
 
 **Acceptance criteria:** Identify one hook missing the guard (if any), add it; note in the PR which you audited.
 
@@ -172,7 +172,7 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 
 **Difficulty:** Easy — 30 min. **Skills:** input validation.
 
-**Story:** The schema allows `events: []`; the handler then special-cases it ([`record/route.ts:37-39`](../../src/app/api/record/route.ts)). Move the guard into Zod (`.min(1)`).
+**Story:** The schema allows `events: []`; the handler then special-cases it ([`record/route.ts:37-39`](../../../src/app/api/record/route.ts)). Move the guard into Zod (`.min(1)`).
 
 **Read first:** `record/route.ts:18-39`.
 
@@ -188,7 +188,7 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 
 **Difficulty:** Easy — 45 min. **Skills:** DoS awareness.
 
-**Story:** `/api/batch` accepts `z.array(anyObjectParam)` with no max ([`batch/route.ts:7`](../../src/app/api/batch/route.ts)); each item re-enters the full send handler sequentially.
+**Story:** `/api/batch` accepts `z.array(anyObjectParam)` with no max ([`batch/route.ts:7`](../../../src/app/api/batch/route.ts)); each item re-enters the full send handler sequentially.
 
 **Read first:** `batch/route.ts`; compare `record`'s `.max(200)` cap.
 
@@ -206,7 +206,7 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 
 **Story:** List the ~15 env vars read in `next.config.ts` with one-line descriptions.
 
-**Read first:** [`next.config.ts`](../../next.config.ts) top section.
+**Read first:** [`next.config.ts`](../../../next.config.ts) top section.
 
 **Acceptance criteria:** A table in `fabledocs/` or a repo doc; no secrets, just names and purposes.
 
@@ -218,7 +218,7 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 
 **Difficulty:** Easy — 45 min. **Skills:** testing branching logic.
 
-**Story:** `getDevice` calls a desktop ≤1920px wide a "laptop" ([`detect.ts:49-61`](../../src/lib/detect.ts)). Pin this with tests.
+**Story:** `getDevice` calls a desktop ≤1920px wide a "laptop" ([`detect.ts:49-61`](../../../src/lib/detect.ts)). Pin this with tests.
 
 **Acceptance criteria:** Cases for mobile UA, desktop UA with wide screen, desktop UA with `≤1920` screen → "laptop".
 
@@ -234,7 +234,7 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 
 **Story:** `runQuery` is the persistence dispatcher; a one-block comment saves every new reader a spelunk.
 
-**Read first:** [`db.ts:22-36`](../../src/lib/db.ts).
+**Read first:** [`db.ts:22-36`](../../../src/lib/db.ts).
 
 **Acceptance criteria:** JSDoc listing the Kafka→ClickHouse→Prisma selection order and the env vars that drive it.
 
@@ -246,7 +246,7 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 
 **Difficulty:** Easy — 30 min. **Skills:** validation/DB-alignment.
 
-**Story:** `title` has no length cap in the schema ([`send/route.ts:36`](../../src/app/api/send/route.ts)) though it's truncated to `PAGE_TITLE_LENGTH` at write. Align the schema with the column.
+**Story:** `title` has no length cap in the schema ([`send/route.ts:36`](../../../src/app/api/send/route.ts)) though it's truncated to `PAGE_TITLE_LENGTH` at write. Align the schema with the column.
 
 **Read first:** `send/route.ts:36`, `saveEvent.ts:123`, `constants.ts:256`.
 
@@ -262,7 +262,7 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 
 **Difficulty:** Medium — 2h. **Skills:** testing time-dependent logic.
 
-**Story:** Cover the "expire visit after 30 minutes" branch ([`send/route.ts:171-175`](../../src/app/api/send/route.ts)).
+**Story:** Cover the "expire visit after 30 minutes" branch ([`send/route.ts:171-175`](../../../src/app/api/send/route.ts)).
 
 **Read first:** the block; note it uses `Math.floor(Date.now()/1000)`.
 
@@ -278,7 +278,7 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 
 **Difficulty:** Medium — 1–2h. **Skills:** enabling e2e testing.
 
-**Story:** Cypress selects by `data-test` ([`login.cy.ts`](../../cypress/e2e/login.cy.ts) uses `getDataTest`). Add attributes to a form that lacks them to unblock future e2e.
+**Story:** Cypress selects by `data-test` ([`login.cy.ts`](../../../cypress/e2e/login.cy.ts) uses `getDataTest`). Add attributes to a form that lacks them to unblock future e2e.
 
 **Read first:** `LoginForm.tsx` for the convention; pick a form under `src/app/(main)/.../settings`.
 
@@ -292,7 +292,7 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 
 **Difficulty:** Easy — 45 min. **Skills:** defensive defaults.
 
-**Story:** `getSalt` treats anything not `day`/`week` as `month` ([`crypto.ts:72-78`](../../src/lib/crypto.ts)). Add a test documenting this and a comment.
+**Story:** `getSalt` treats anything not `day`/`week` as `month` ([`crypto.ts:72-78`](../../../src/lib/crypto.ts)). Add a test documenting this and a comment.
 
 **Acceptance criteria:** Test asserts `getSalt('garbage', d)` behaves like `month`.
 
@@ -306,7 +306,7 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 
 **Difficulty:** Medium — 1–2h. **Skills:** observability, reading existing routes.
 
-**Story:** The heartbeat is used by the docker healthcheck ([`docker-compose.yml`](../../docker-compose.yml)). Confirm what it returns and, if trivial-only, add a version field.
+**Story:** The heartbeat is used by the docker healthcheck ([`docker-compose.yml`](../../../docker-compose.yml)). Confirm what it returns and, if trivial-only, add a version field.
 
 **Read first:** `src/app/api/heartbeat/route.ts`.
 
@@ -322,7 +322,7 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 
 **Difficulty:** Easy — 30 min. **Skills:** attention to detail.
 
-**Story:** The pixel/link routes read `'referer'` ([`p/[slug]/route.ts:50`](../../src/app/(collect)/p/[slug]/route.ts)) — the HTTP misspelling. Confirm it's correct (it is, per spec) and add a clarifying comment so no one "fixes" it to `referrer` and breaks it.
+**Story:** The pixel/link routes read `'referer'` ([`p/[slug]/route.ts:50`](../../../src/app/(collect)/p/[slug]/route.ts)) — the HTTP misspelling. Confirm it's correct (it is, per spec) and add a clarifying comment so no one "fixes" it to `referrer` and breaks it.
 
 **Acceptance criteria:** Comment added; no behavior change.
 
@@ -336,7 +336,7 @@ Difficulty legend: Easy = 1 file, <1h. Medium = 2–3 files, 1–3h.
 
 **Difficulty:** Easy — 45 min. **Skills:** testing error handling.
 
-**Story:** `parseToken`/`parseSecureToken` return `null` on invalid input ([`jwt.ts:8-26`](../../src/lib/jwt.ts)). Pin that they never throw.
+**Story:** `parseToken`/`parseSecureToken` return `null` on invalid input ([`jwt.ts:8-26`](../../../src/lib/jwt.ts)). Pin that they never throw.
 
 **Acceptance criteria:** Tests pass a malformed token, an expired token, and a wrong-secret token; all return `null`.
 

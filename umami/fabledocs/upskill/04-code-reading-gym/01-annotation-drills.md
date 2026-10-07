@@ -8,7 +8,7 @@ How to annotate: open the anchored file, read the excerpt in context, and write 
 
 ## Drill 1 — The identity derivation
 
-**Anchor:** [`src/app/api/send/route.ts:143-175`](../../src/app/api/send/route.ts)
+**Anchor:** [`src/app/api/send/route.ts:143-175`](../../../src/app/api/send/route.ts)
 
 ```ts
 const saltRotation = process.env.SALT_ROTATION || 'month';
@@ -35,7 +35,7 @@ if (!timestamp && now - iat > 1800) { visitId = uuid(sessionId, visitSalt); iat 
 
 ## Drill 2 — The persistence dispatcher
 
-**Anchor:** [`src/lib/db.ts:22-36`](../../src/lib/db.ts)
+**Anchor:** [`src/lib/db.ts:22-36`](../../../src/lib/db.ts)
 
 ```ts
 export async function runQuery(queries: any) {
@@ -62,7 +62,7 @@ export async function runQuery(queries: any) {
 
 ## Drill 3 — The permission check (IDOR guard)
 
-**Anchor:** [`src/permissions/website.ts:7-40`](../../src/permissions/website.ts)
+**Anchor:** [`src/permissions/website.ts:7-40`](../../../src/permissions/website.ts)
 
 ```ts
 export async function canViewWebsite({ user, shareToken }: Auth, websiteId: string) {
@@ -90,7 +90,7 @@ export async function canViewWebsite({ user, shareToken }: Auth, websiteId: stri
 
 ## Drill 4 — The event write, relational branch
 
-**Anchor:** [`src/queries/sql/events/saveEvent.ts:143-167`](../../src/queries/sql/events/saveEvent.ts)
+**Anchor:** [`src/queries/sql/events/saveEvent.ts:143-167`](../../../src/queries/sql/events/saveEvent.ts)
 
 ```ts
 if (eventData) {
@@ -116,7 +116,7 @@ if (eventData) {
 
 ## Drill 5 — Cache-aside fetch with tombstone
 
-**Anchor:** [`src/lib/redis.ts:84-102`](../../src/lib/redis.ts)
+**Anchor:** [`src/lib/redis.ts:84-102`](../../../src/lib/redis.ts)
 
 ```ts
 async fetch(key, query, time?) {
@@ -146,7 +146,7 @@ async remove(key, soft = false) { return soft ? this.set(key, DELETED) : this.de
 
 ## Drill 6 — The suffixed-filter re-add
 
-**Anchor:** [`src/lib/request.ts:30-42`](../../src/lib/request.ts)
+**Anchor:** [`src/lib/request.ts:30-42`](../../../src/lib/request.ts)
 
 ```ts
 } else if (isGet) {
@@ -171,7 +171,7 @@ async remove(key, soft = false) { return soft ? this.set(key, DELETED) : this.de
 
 ## Drill 7 — Fire-and-forget Kafka send
 
-**Anchor:** [`src/lib/kafka.ts:66-91`](../../src/lib/kafka.ts)
+**Anchor:** [`src/lib/kafka.ts:66-91`](../../../src/lib/kafka.ts)
 
 ```ts
 async function sendMessage(topic, message) {
@@ -198,7 +198,7 @@ async function sendMessage(topic, message) {
 
 ## Drill 8 — The tracker's history hook
 
-**Anchor:** [`src/tracker/index.js:98-109`](../../src/tracker/index.js)
+**Anchor:** [`src/tracker/index.js:98-109`](../../../src/tracker/index.js)
 
 ```js
 const handlePathChanges = () => {
@@ -225,7 +225,7 @@ const handlePathChanges = () => {
 
 ## Drill 9 — The exactly-one-source refine
 
-**Anchor:** [`src/app/api/send/route.ts:53-63`](../../src/app/api/send/route.ts)
+**Anchor:** [`src/app/api/send/route.ts:53-63`](../../../src/app/api/send/route.ts)
 
 ```ts
 .refine(data => {
@@ -240,7 +240,7 @@ const handlePathChanges = () => {
 - **Dependencies:** Zod `.refine`.
 - **Invariant:** exactly one event source.
 - **Side effects:** none.
-- **Failure modes:** if removed, `sourceId = websiteId || pixelId || linkId` ([`:98`](../../src/app/api/send/route.ts)) silently picks one by precedence, and event-type derivation ([`:217-223`](../../src/app/api/send/route.ts)) misclassifies.
+- **Failure modes:** if removed, `sourceId = websiteId || pixelId || linkId` ([`:98`](../../../src/app/api/send/route.ts)) silently picks one by precedence, and event-type derivation ([`:217-223`](../../../src/app/api/send/route.ts)) misclassifies.
 
 **Self-grade:** *Solid* if you named the invariant. *Strong* if you traced the two downstream places that assume it and explained the silent bug its removal would cause.
 
@@ -248,7 +248,7 @@ const handlePathChanges = () => {
 
 ## Drill 10 — The cache-bypass in replay ingest
 
-**Anchor:** [`src/app/api/record/route.ts:56-65`](../../src/app/api/record/route.ts)
+**Anchor:** [`src/app/api/record/route.ts:56-65`](../../../src/app/api/record/route.ts)
 
 ```ts
 // Query directly to avoid stale Redis cache for recordingEnabled

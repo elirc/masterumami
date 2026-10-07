@@ -8,7 +8,7 @@ Why this matters: most React bugs come from treating render as if it runs once, 
 
 ## React 19 + the React Compiler
 
-Umami uses React 19 with `babel-plugin-react-compiler` ([`package.json:101,136`](../../package.json)). The compiler auto-memoizes — it inserts the equivalent of `useMemo`/`useCallback` for you, so hand-memoization is less necessary than in older React. The mental model shift: you write straightforward components and the compiler handles referential stability. In an interview, note that this reduces (not eliminates) the need for manual memoization and changes the "why is this re-rendering?" conversation.
+Umami uses React 19 with `babel-plugin-react-compiler` ([`package.json:101,136`](../../../package.json)). The compiler auto-memoizes — it inserts the equivalent of `useMemo`/`useCallback` for you, so hand-memoization is less necessary than in older React. The mental model shift: you write straightforward components and the compiler handles referential stability. In an interview, note that this reduces (not eliminates) the need for manual memoization and changes the "why is this re-rendering?" conversation.
 
 ## State: three kinds, three tools
 
@@ -26,16 +26,16 @@ The lesson: don't put server data in Zustand or `useState` — you'd be hand-rol
 
 A `useQuery` is a **subscription to a cached async resource keyed by inputs**. The `queryKey` is the cache identity: same key → same cached entry; changed key → refetch. Everything the result depends on must be in the key.
 
-Real example — [`useWebsiteMetricsQuery.ts:21-42`](../../src/components/hooks/queries/useWebsiteMetricsQuery.ts):
+Real example — [`useWebsiteMetricsQuery.ts:21-42`](../../../src/components/hooks/queries/useWebsiteMetricsQuery.ts):
 - `queryKey` = `['websites:metrics', { websiteId, startAt, endAt, ...filters, ...params }]` — every input is present.
 - `enabled: !!websiteId` — defer the fetch until the id exists (avoids a request with `undefined`).
 - `placeholderData: keepPreviousData` — show the last data while refetching, so changing a filter doesn't flash empty.
 
-Mutations follow the sibling pattern ([`useUpdateQuery.ts`](../../src/components/hooks/queries/useUpdateQuery.ts)): a `useMutation` calling `post`, plus a `touch()` to signal "data changed."
+Mutations follow the sibling pattern ([`useUpdateQuery.ts`](../../../src/components/hooks/queries/useUpdateQuery.ts)): a `useMutation` calling `post`, plus a `touch()` to signal "data changed."
 
 ### Zustand mental model
 
-A minimal global store: `create(() => initialState)` and setter functions that call `store.setState` ([`store/app.ts:25-52`](../../src/store/app.ts)). Components subscribe via `useApp(selector)`; a narrow selector (like `useApi`'s `state => state.shareToken`, [`useApi.ts:9`](../../src/components/hooks/useApi.ts)) means the component re-renders only when that slice changes. The lesson: **select narrowly** or you re-render on unrelated store updates.
+A minimal global store: `create(() => initialState)` and setter functions that call `store.setState` ([`store/app.ts:25-52`](../../../src/store/app.ts)). Components subscribe via `useApp(selector)`; a narrow selector (like `useApi`'s `state => state.shareToken`, [`useApi.ts:9`](../../../src/components/hooks/useApi.ts)) means the component re-renders only when that slice changes. The lesson: **select narrowly** or you re-render on unrelated store updates.
 
 ## Effects: the part juniors overuse
 
@@ -51,7 +51,7 @@ Next.js App Router defaults components to **Server Components** (render on the s
 
 ## Data fetching layer
 
-Umami does **not** use tRPC or GraphQL — it's REST over a thin `useApi` wrapper ([`useApi.ts`](../../src/components/hooks/useApi.ts)) that injects the bearer token and share headers, wrapped by ~60 typed React Query hooks. The tradeoff vs. tRPC: no end-to-end type inference from server to client (you type the hooks by hand, e.g. `WebsiteMetricsData`), but zero coupling and a plain HTTP API third parties can call. Being able to compare REST-hooks vs. tRPC is a good frontend-architecture answer.
+Umami does **not** use tRPC or GraphQL — it's REST over a thin `useApi` wrapper ([`useApi.ts`](../../../src/components/hooks/useApi.ts)) that injects the bearer token and share headers, wrapped by ~60 typed React Query hooks. The tradeoff vs. tRPC: no end-to-end type inference from server to client (you type the hooks by hand, e.g. `WebsiteMetricsData`), but zero coupling and a plain HTTP API third parties can call. Being able to compare REST-hooks vs. tRPC is a good frontend-architecture answer.
 
 ## Pitfall checklist (React)
 

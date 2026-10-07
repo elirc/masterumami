@@ -50,7 +50,7 @@ Nine senior katas. Each is a focused exercise in judgment, with self-grading cri
 
 ## Kata 5: Improve type safety (raw-SQL results)
 
-**Task:** `rawQuery` returns `any` ([`prisma.ts:255`](../../src/lib/prisma.ts)); result interfaces are hand-maintained and unchecked. Propose a way to increase safety.
+**Task:** `rawQuery` returns `any` ([`prisma.ts:255`](../../../src/lib/prisma.ts)); result interfaces are hand-maintained and unchecked. Propose a way to increase safety.
 
 **Self-grade:**
 - *Solid:* you proposed typing `rawQuery<T>` and annotating call sites.

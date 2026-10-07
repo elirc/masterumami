@@ -14,7 +14,7 @@ Grading key: **Blocking** = must fix before merge (correctness/security). **Impo
 
 **Diff summary:** adds `orderBy` to the sessions route schema (`sortingParams`) and passes `query.orderBy` through `getQueryFilters` into `getWebsiteSessions` → `pagedRawQuery`.
 
-**Resembles:** [`sessions/route.ts`](../../src/app/api/websites/[websiteId]/sessions/route.ts), [`prisma.ts:318-323`](../../src/lib/prisma.ts).
+**Resembles:** [`sessions/route.ts`](../../../src/app/api/websites/[websiteId]/sessions/route.ts), [`prisma.ts:318-323`](../../../src/lib/prisma.ts).
 
 **Your task:** review it.
 
@@ -34,7 +34,7 @@ Grading key: **Blocking** = must fix before merge (correctness/security). **Impo
 
 **Diff summary:** wraps the event, event-data, and revenue writes in `Promise.all`.
 
-**Resembles:** [`saveEvent.ts:143-167`](../../src/queries/sql/events/saveEvent.ts).
+**Resembles:** [`saveEvent.ts:143-167`](../../../src/queries/sql/events/saveEvent.ts).
 
 **Expected findings —**
 - **Blocking:** revenue and event_data both need the event's `websiteEventId`, which is created by the event insert. `Promise.all`-ing them with the event insert races the id — they'd run before the event exists. The event write must complete first.
@@ -52,7 +52,7 @@ Grading key: **Blocking** = must fix before merge (correctness/security). **Impo
 
 **Diff summary:** replaces `getWebsite(websiteId)` with `fetchWebsite(websiteId)` in `record/route.ts`.
 
-**Resembles:** [`record/route.ts:56-57`](../../src/app/api/record/route.ts), [`load.ts:6`](../../src/lib/load.ts).
+**Resembles:** [`record/route.ts:56-57`](../../../src/app/api/record/route.ts), [`load.ts:6`](../../../src/lib/load.ts).
 
 **Expected findings —**
 - **Blocking:** the direct query is *intentional* — there's a comment "avoid stale Redis cache for recordingEnabled." Caching reintroduces up-to-24h staleness on `replayEnabled`, so disabling replay wouldn't take effect. This regresses a deliberate correctness choice.
@@ -69,7 +69,7 @@ Grading key: **Blocking** = must fix before merge (correctness/security). **Impo
 
 **Diff summary:** changes a route's catch to `return serverError({ message: e.message, stack: e.stack })`.
 
-**Resembles:** error handling in [`send/route.ts:314-320`](../../src/app/api/send/route.ts).
+**Resembles:** error handling in [`send/route.ts:314-320`](../../../src/app/api/send/route.ts).
 
 **Expected findings —**
 - **Blocking (security):** returning `stack` to the client leaks internals (file paths, query fragments) — information disclosure, worse on an unauthenticated endpoint. Log server-side, return a generic message + an error id.
@@ -86,7 +86,7 @@ Grading key: **Blocking** = must fix before merge (correctness/security). **Impo
 
 **Diff summary:** calls `redis.rateLimit(\`login:${username}\`, 5, 60)` at the top of the login handler; returns 429 when exceeded.
 
-**Resembles:** [`login/route.ts`](../../src/app/api/auth/login/route.ts), [`redis.ts:72-82`](../../src/lib/redis.ts).
+**Resembles:** [`login/route.ts`](../../../src/app/api/auth/login/route.ts), [`redis.ts:72-82`](../../../src/lib/redis.ts).
 
 **Expected findings —**
 - **Important:** good idea, but keying by `username` lets an attacker lock out a victim (denial of service) and doesn't limit password spraying across many usernames from one IP. Consider keying by IP (or IP+username).
@@ -104,7 +104,7 @@ Grading key: **Blocking** = must fix before merge (correctness/security). **Impo
 
 **Diff summary:** deletes the `.refine` from the send schema.
 
-**Resembles:** [`send/route.ts:53-63`](../../src/app/api/send/route.ts).
+**Resembles:** [`send/route.ts:53-63`](../../../src/app/api/send/route.ts).
 
 **Expected findings —**
 - **Blocking:** removing the refine lets a payload with two sources through; `sourceId` silently picks one by `||` precedence, and the event-type derivation (`:217-223`) misclassifies the event. The refine encodes a real invariant multiple downstream lines depend on.
@@ -121,7 +121,7 @@ Grading key: **Blocking** = must fix before merge (correctness/security). **Impo
 
 **Diff summary:** extracts `getBase(hostname)` and replaces three inline usages. No behavior change.
 
-**Resembles:** [`send/route.ts:178,283`](../../src/app/api/send/route.ts).
+**Resembles:** [`send/route.ts:178,283`](../../../src/app/api/send/route.ts).
 
 **Expected findings —**
 - **Optional (approve):** legitimate small DRY, follows the codebase style, no behavior change. This is a *good* PR.
@@ -138,7 +138,7 @@ Grading key: **Blocking** = must fix before merge (correctness/security). **Impo
 
 **Diff summary:** replaces `saveEventData`'s row-per-key insert with a single `jsonb` column write.
 
-**Resembles:** [`saveEventData.ts:27-48`](../../src/queries/sql/events/saveEventData.ts).
+**Resembles:** [`saveEventData.ts:27-48`](../../../src/queries/sql/events/saveEventData.ts).
 
 **Expected findings —**
 - **Blocking:** this breaks every query that filters/aggregates on `data_key`/`string_value` (funnels with property filters, event-data reports). The EAV shape exists precisely to make properties *queryable*; a blob isn't.
@@ -156,7 +156,7 @@ Grading key: **Blocking** = must fix before merge (correctness/security). **Impo
 
 **Diff summary:** changes `request.headers.get('referer')` to `'referrer'`.
 
-**Resembles:** [`p/[slug]/route.ts:50`](../../src/app/(collect)/p/[slug]/route.ts).
+**Resembles:** [`p/[slug]/route.ts:50`](../../../src/app/(collect)/p/[slug]/route.ts).
 
 **Expected findings —**
 - **Blocking:** `Referer` is the *correct*, spec-defined HTTP header name (the misspelling is in the HTTP standard itself). Changing it to `referrer` means the header is never found → referrer tracking silently breaks.
@@ -173,7 +173,7 @@ Grading key: **Blocking** = must fix before merge (correctness/security). **Impo
 
 **Diff summary:** adds `@@index([createdAt])` to `WebsiteEvent` (which already has many composite indexes).
 
-**Resembles:** [`schema.prisma:135-149`](../../prisma/schema.prisma).
+**Resembles:** [`schema.prisma:135-149`](../../../prisma/schema.prisma).
 
 **Expected findings —**
 - **Important:** `@@index([createdAt])` already exists (`:135`), and queries filter by `website_id` *first*, so a lone `created_at` index won't help — the composite `(website_id, created_at, ...)` indexes serve those. Measure with `EXPLAIN` before adding.

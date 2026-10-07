@@ -10,17 +10,17 @@ Card format: what it tests → repo anchor → junior/mid/senior answer → foll
 
 **Round:** JS deep-dive. **What it's really testing:** understanding of the browser event loop, page lifecycle, and unload behavior.
 
-**Repo anchor:** [`src/tracker/index.js:175-184`](../../src/tracker/index.js).
+**Repo anchor:** [`src/tracker/index.js:175-184`](../../../src/tracker/index.js).
 
 **Junior answer:** "It keeps the connection alive." (Vague.)
 
 **Mid adds:** `keepalive` lets a `fetch` outlive the page that started it — so an event fired during `pagehide`/unload still completes instead of being cancelled when navigation tears down the document. Without it, the last pageview before a navigation is often lost.
 
-**Senior adds:** It's the modern replacement for `navigator.sendBeacon`; it has a browser-imposed body-size cap (~64KB) shared across in-flight keepalive requests, which is *why* replay batches are capped (200 events, [`record/route.ts:23`](../../src/app/api/record/route.ts)) and events are small. Tradeoff: reliability on unload vs. size limits and no access to the response in some unload timings.
+**Senior adds:** It's the modern replacement for `navigator.sendBeacon`; it has a browser-imposed body-size cap (~64KB) shared across in-flight keepalive requests, which is *why* replay batches are capped (200 events, [`record/route.ts:23`](../../../src/app/api/record/route.ts)) and events are small. Tradeoff: reliability on unload vs. size limits and no access to the response in some unload timings.
 
 **Follow-ups:** "sendBeacon vs keepalive fetch?" "What happens if the payload exceeds the cap?"
 
-**Drill:** Explain aloud in 60s why an analytics tracker specifically needs unload-surviving requests. Reference `flushPerformance` on `pagehide` ([`tracker/index.js:382`](../../src/tracker/index.js)).
+**Drill:** Explain aloud in 60s why an analytics tracker specifically needs unload-surviving requests. Reference `flushPerformance` on `pagehide` ([`tracker/index.js:382`](../../../src/tracker/index.js)).
 
 ---
 
@@ -28,7 +28,7 @@ Card format: what it tests → repo anchor → junior/mid/senior answer → foll
 
 **Round:** JS/Node deep-dive. **Tests:** the event loop, async/await, concurrency vs. parallelism.
 
-**Repo anchor:** [`send/route.ts:150-271`](../../src/app/api/send/route.ts); [`saveEvent.ts:143-167`](../../src/queries/sql/events/saveEvent.ts).
+**Repo anchor:** [`send/route.ts:150-271`](../../../src/app/api/send/route.ts); [`saveEvent.ts:143-167`](../../../src/queries/sql/events/saveEvent.ts).
 
 **Junior:** "It waits for each line to finish." True but shallow.
 
@@ -46,13 +46,13 @@ Card format: what it tests → repo anchor → junior/mid/senior answer → foll
 
 **Round:** JS/Node + crypto basics. **Tests:** hashing vs. random ids, determinism, understanding library APIs.
 
-**Repo anchor:** [`crypto.ts:60-66`](../../src/lib/crypto.ts) — uses `uuid` v5 (namespaced hash) when args are present, v4/v7 (random) otherwise.
+**Repo anchor:** [`crypto.ts:60-66`](../../../src/lib/crypto.ts) — uses `uuid` v5 (namespaced hash) when args are present, v4/v7 (random) otherwise.
 
 **Junior:** "It's a UUID." Misses that it's deterministic.
 
 **Mid adds:** v5 UUIDs are a hash of a name within a namespace — same inputs → same output. Umami uses this to derive a stable visitor id from IP+UA+salt without storing anything, which is the whole cookieless-identity trick.
 
-**Senior adds:** The determinism is what makes the session insert idempotent (`on conflict do nothing`, [`createSession.ts:39`](../../src/queries/sql/sessions/createSession.ts)) and makes retries safe. The salt rotation ([`getSalt`, `crypto.ts:72`](../../src/lib/crypto.ts)) deliberately breaks determinism across periods for privacy — a designed limitation, not a bug. Tradeoff: no cross-period tracking, so returning visitors look new each month.
+**Senior adds:** The determinism is what makes the session insert idempotent (`on conflict do nothing`, [`createSession.ts:39`](../../../src/queries/sql/sessions/createSession.ts)) and makes retries safe. The salt rotation ([`getSalt`, `crypto.ts:72`](../../../src/lib/crypto.ts)) deliberately breaks determinism across periods for privacy — a designed limitation, not a bug. Tradeoff: no cross-period tracking, so returning visitors look new each month.
 
 **Follow-ups:** "When would you use v4 vs v5 vs v7?" (v7 is time-ordered — better index locality; note `USE_UUIDV7`, `crypto.ts:65`.) "Is a hash of IP+UA PII?"
 
@@ -64,7 +64,7 @@ Card format: what it tests → repo anchor → junior/mid/senior answer → foll
 
 **Round:** TS/validation. **Tests:** understanding schema validation defaults and reading around a workaround.
 
-**Repo anchor:** [`request.ts:23-42`](../../src/lib/request.ts), the `/\d+$/` re-add loop (`:33-38`).
+**Repo anchor:** [`request.ts:23-42`](../../../src/lib/request.ts), the `/\d+$/` re-add loop (`:33-38`).
 
 **Junior:** "It validates the query." Doesn't see the hack.
 
@@ -82,7 +82,7 @@ Card format: what it tests → repo anchor → junior/mid/senior answer → foll
 
 **Round:** TS + Node/sessions. **Tests:** union handling, sessions vs JWT.
 
-**Repo anchor:** [`auth.ts:17-60`](../../src/lib/auth.ts); issuance in [`login/route.ts:36-40`](../../src/app/api/auth/login/route.ts).
+**Repo anchor:** [`auth.ts:17-60`](../../../src/lib/auth.ts); issuance in [`login/route.ts:36-40`](../../../src/app/api/auth/login/route.ts).
 
 **Junior:** "It checks the token." Misses the two paths.
 
@@ -92,7 +92,7 @@ Card format: what it tests → repo anchor → junior/mid/senior answer → foll
 
 **Follow-ups:** "How would you revoke a stateless JWT?" (deny-list, short expiry + refresh). "Why encrypt the token, not just sign it?" (Q maps to [Pattern 16](../03-architecture-and-patterns/05-pattern-catalog.md#pattern-16-encrypted-not-just-signed-token).)
 
-**Drill:** Given `parseSecureToken` ([`jwt.ts:20-26`](../../src/lib/jwt.ts)), explain the decrypt-then-verify order and why both steps exist.
+**Drill:** Given `parseSecureToken` ([`jwt.ts:20-26`](../../../src/lib/jwt.ts)), explain the decrypt-then-verify order and why both steps exist.
 
 ---
 
@@ -100,13 +100,13 @@ Card format: what it tests → repo anchor → junior/mid/senior answer → foll
 
 **Round:** API/security + Node. **Tests:** parameterization vs. concatenation.
 
-**Repo anchor:** [`prisma.ts:255-282`](../../src/lib/prisma.ts) — `{{name::type}}` → `$n`, values pushed to a `params` array (`:268-276`).
+**Repo anchor:** [`prisma.ts:255-282`](../../../src/lib/prisma.ts) — `{{name::type}}` → `$n`, values pushed to a `params` array (`:268-276`).
 
 **Junior:** "It looks unsafe." Can't distinguish text from values.
 
 **Mid adds:** The `{{param}}` placeholders are rewritten to positional bind parameters (`$1`, `$2`) and the values are passed *separately* to the driver — so user values never become SQL syntax. "Unsafe" refers to the query *text* being a dynamic string, not the values.
 
-**Senior adds:** The real risk is anything interpolated *outside* the placeholder system. `pagedRawQuery` does `order by ${orderBy}` ([`prisma.ts:318-323`](../../src/lib/prisma.ts)) — direct interpolation. It's safe *today* only because no route feeds user-controlled `orderBy` into it (the list routes hardcode `order by created_at desc` and omit `sortingParams`). That's a latent injection surface: add one route that passes user `orderBy` and you have a hole. This is the difference between "no bug" and "no vulnerability class."
+**Senior adds:** The real risk is anything interpolated *outside* the placeholder system. `pagedRawQuery` does `order by ${orderBy}` ([`prisma.ts:318-323`](../../../src/lib/prisma.ts)) — direct interpolation. It's safe *today* only because no route feeds user-controlled `orderBy` into it (the list routes hardcode `order by created_at desc` and omit `sortingParams`). That's a latent injection surface: add one route that passes user `orderBy` and you have a hole. This is the difference between "no bug" and "no vulnerability class."
 
 **Follow-ups:** "How would you safely allow user-chosen sort columns?" (allow-list mapping, never interpolate). "Where else is text vs. value confused?"
 
@@ -118,7 +118,7 @@ Card format: what it tests → repo anchor → junior/mid/senior answer → foll
 
 **Round:** JS deep-dive. **Tests:** knowledge of `JSON.stringify` limits and number types.
 
-**Repo anchor:** [`db.ts:7-10`](../../src/lib/db.ts).
+**Repo anchor:** [`db.ts:7-10`](../../../src/lib/db.ts).
 
 **Junior:** "It converts BigInt." Doesn't know why it's needed.
 
@@ -136,7 +136,7 @@ Card format: what it tests → repo anchor → junior/mid/senior answer → foll
 
 **Round:** JS deep-dive (closures, monkey-patching). **Tests:** closures, higher-order functions, SPA routing.
 
-**Repo anchor:** [`tracker/index.js:98-109`](../../src/tracker/index.js) — `hook(this, method, callback)` returns a wrapper closing over `orig`.
+**Repo anchor:** [`tracker/index.js:98-109`](../../../src/tracker/index.js) — `hook(this, method, callback)` returns a wrapper closing over `orig`.
 
 **Junior:** "It overrides pushState." Can't explain the closure.
 
@@ -154,13 +154,13 @@ Card format: what it tests → repo anchor → junior/mid/senior answer → foll
 
 **Round:** TS/validation. **Tests:** Zod refinements, cross-field validation.
 
-**Repo anchor:** [`send/route.ts:53-63`](../../src/app/api/send/route.ts).
+**Repo anchor:** [`send/route.ts:53-63`](../../../src/app/api/send/route.ts).
 
 **Junior:** "It checks the fields exist." Misses "exactly one."
 
 **Mid adds:** Field-level rules can't express "exactly one of these three." A `.refine` runs a predicate over the whole object: it counts how many of `website/link/pixel` are truthy and requires the count to equal 1, attaching the error to a path. It encodes a mutual-exclusivity invariant.
 
-**Senior adds:** This invariant is load-bearing downstream — `sourceId = websiteId || pixelId || linkId` ([`send/route.ts:98`](../../src/app/api/send/route.ts)) and the event-type derivation ([`:217-223`](../../src/app/api/send/route.ts)) both assume exactly one. Without the refine, a payload with two sources would silently pick one by `||` precedence — a subtle bug the schema prevents at the boundary. Validate invariants where data enters, not where it's used.
+**Senior adds:** This invariant is load-bearing downstream — `sourceId = websiteId || pixelId || linkId` ([`send/route.ts:98`](../../../src/app/api/send/route.ts)) and the event-type derivation ([`:217-223`](../../../src/app/api/send/route.ts)) both assume exactly one. Without the refine, a payload with two sources would silently pick one by `||` precedence — a subtle bug the schema prevents at the boundary. Validate invariants where data enters, not where it's used.
 
 **Follow-ups:** "Where else would this invariant break if the refine were removed?" "superRefine vs refine?"
 
@@ -172,7 +172,7 @@ Card format: what it tests → repo anchor → junior/mid/senior answer → foll
 
 **Round:** frontend/JS. **Tests:** closures over hook state, effect dependencies.
 
-**Repo anchor:** conceptual — but React Query hooks like [`useWebsiteMetricsQuery.ts:32-38`](../../src/components/hooks/queries/useWebsiteMetricsQuery.ts) capture `startAt`, `filters` in the `queryFn`.
+**Repo anchor:** conceptual — but React Query hooks like [`useWebsiteMetricsQuery.ts:32-38`](../../../src/components/hooks/queries/useWebsiteMetricsQuery.ts) capture `startAt`, `filters` in the `queryFn`.
 
 **Junior:** "When state is old." Vague.
 
@@ -190,11 +190,11 @@ Card format: what it tests → repo anchor → junior/mid/senior answer → foll
 
 **Round:** JS/TS. **Tests:** nullish coalescing, falsy pitfalls.
 
-**Repo anchor:** [`detect.ts:133-135`](../../src/lib/detect.ts).
+**Repo anchor:** [`detect.ts:133-135`](../../../src/lib/detect.ts).
 
 **Junior:** "They're the same." Wrong.
 
-**Mid adds:** `??` falls back only on `null`/`undefined`; `||` falls back on any falsy value (`''`, `0`, `false`). Using `??` means an explicitly provided empty-string browser wouldn't be silently overridden — though here the practical effect is subtle. The habit matters more elsewhere: `pageSize || DEFAULT` ([`prisma.ts:286`](../../src/lib/prisma.ts)) treats `0` as "unset," which `??` would not.
+**Mid adds:** `??` falls back only on `null`/`undefined`; `||` falls back on any falsy value (`''`, `0`, `false`). Using `??` means an explicitly provided empty-string browser wouldn't be silently overridden — though here the practical effect is subtle. The habit matters more elsewhere: `pageSize || DEFAULT` ([`prisma.ts:286`](../../../src/lib/prisma.ts)) treats `0` as "unset," which `??` would not.
 
 **Senior adds:** The pattern to teach: use `||` when you truly want "any falsy → default" (e.g. `pageSize` where 0 is meaningless) and `??` when `0`/`''`/`false` are legitimate values. Mixing them up is a top source of "why is my zero being replaced?" bugs. Umami uses both deliberately in adjacent files — a good compare-and-contrast.
 
@@ -208,13 +208,13 @@ Card format: what it tests → repo anchor → junior/mid/senior answer → foll
 
 **Round:** TS deep-dive. **Tests:** discriminated unions, exhaustiveness, narrowing.
 
-**Repo anchor:** [`schema.ts:279-289`](../../src/lib/schema.ts) (`z.discriminatedUnion('type', [...])`).
+**Repo anchor:** [`schema.ts:279-289`](../../../src/lib/schema.ts) (`z.discriminatedUnion('type', [...])`).
 
 **Junior:** "It's a union of types." Misses the discriminant.
 
 **Mid adds:** A shared literal field (`type`) lets both Zod and TS narrow to the exact variant — so once you check `type === 'funnel'`, the `parameters` are typed as funnel params. Validation errors are precise, and consumers get variant-specific types.
 
-**Senior adds:** The safety is only as good as its enforcement point. The *persisted* `parameters` column is `Json` and the base save schema uses `anyObjectParam` ([`schema.ts:271-277`](../../src/lib/schema.ts)), so the strict union guards the query/result path but not necessarily every write. The lesson: a discriminated union is a great contract, but verify it's applied at the boundary where bad data would enter, not only where it's read.
+**Senior adds:** The safety is only as good as its enforcement point. The *persisted* `parameters` column is `Json` and the base save schema uses `anyObjectParam` ([`schema.ts:271-277`](../../../src/lib/schema.ts)), so the strict union guards the query/result path but not necessarily every write. The lesson: a discriminated union is a great contract, but verify it's applied at the boundary where bad data would enter, not only where it's read.
 
 **Follow-ups:** "How would you get compile-time exhaustiveness over report types?" (`never` in a default case.) "Where is the union actually enforced vs. bypassed?"
 
@@ -226,7 +226,7 @@ Card format: what it tests → repo anchor → junior/mid/senior answer → foll
 
 **Round:** Node/runtime. **Tests:** module caching, dev hot-reload, connection pools.
 
-**Repo anchor:** [`redis.ts:144-151`](../../src/lib/redis.ts); same idiom in `prisma.ts:390`, `clickhouse.ts:41`.
+**Repo anchor:** [`redis.ts:144-151`](../../../src/lib/redis.ts); same idiom in `prisma.ts:390`, `clickhouse.ts:41`.
 
 **Junior:** "It reuses the client." Doesn't know why.
 
@@ -244,7 +244,7 @@ Card format: what it tests → repo anchor → junior/mid/senior answer → foll
 
 **Round:** Node/error handling + security. **Tests:** error serialization, information leakage.
 
-**Repo anchor:** [`send/route.ts:314-321`](../../src/app/api/send/route.ts), [`record/route.ts:117-124`](../../src/app/api/record/route.ts).
+**Repo anchor:** [`send/route.ts:314-321`](../../../src/app/api/send/route.ts), [`record/route.ts:117-124`](../../../src/app/api/record/route.ts).
 
 **Junior:** "To log the error." Partial.
 

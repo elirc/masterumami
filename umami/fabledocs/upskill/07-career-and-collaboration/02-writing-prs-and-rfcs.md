@@ -4,7 +4,7 @@ Clear written communication about code is a mid-level differentiator. This page 
 
 ## First: this repo's actual contribution rules
 
-From [`CONTRIBUTING.md`](../../CONTRIBUTING.md):
+From [`CONTRIBUTING.md`](../../../CONTRIBUTING.md):
 - **Target the `dev` branch, never `master`.** PRs against `master` get retargeted.
 - Branch from `dev`: `git checkout dev && git pull && git checkout -b my-feature`.
 - **One logical change per PR** — keep it focused.

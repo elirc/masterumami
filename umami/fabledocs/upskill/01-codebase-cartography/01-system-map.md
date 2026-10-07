@@ -62,8 +62,8 @@ Runtime surfaces:
 ## Public interfaces vs. private internals
 
 **Public (contracts you must not break casually):**
-- The **collection API** (`POST /api/send`) — thousands of deployed tracker scripts depend on its payload shape ([`send/route.ts:24-64`](../../src/app/api/send/route.ts)). This is the most sacred contract in the repo.
-- The **tracker script's `data-*` attributes** and `window.umami.track/identify` API ([`tracker/index.js:387-392`](../../src/tracker/index.js)).
+- The **collection API** (`POST /api/send`) — thousands of deployed tracker scripts depend on its payload shape ([`send/route.ts:24-64`](../../../src/app/api/send/route.ts)). This is the most sacred contract in the repo.
+- The **tracker script's `data-*` attributes** and `window.umami.track/identify` API ([`tracker/index.js:387-392`](../../../src/tracker/index.js)).
 - The **REST API** under `/api/*` — used by the dashboard and by third-party API consumers.
 - The **database schema** — migrations are forward-only; see `prisma/migrations/`.
 

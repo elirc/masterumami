@@ -25,7 +25,7 @@ function Sessions({ sessions }: { sessions: SessionView[] }) {
 }
 ```
 
-**Why better:** the DB's `snake_case` and column names shouldn't leak to the client. Umami aliases at the SQL boundary (`session.session_id as "id"`, [`getWebsiteSessions.ts:36-52`](../../src/queries/sql/sessions/getWebsiteSessions.ts)) so the API contract is independent of the schema. Compare: real code.
+**Why better:** the DB's `snake_case` and column names shouldn't leak to the client. Umami aliases at the SQL boundary (`session.session_id as "id"`, [`getWebsiteSessions.ts:36-52`](../../../src/queries/sql/sessions/getWebsiteSessions.ts)) so the API contract is independent of the schema. Compare: real code.
 
 ---
 
@@ -48,7 +48,7 @@ if (!(await canViewWebsite(auth, websiteId))) return unauthorized();
 const data = await getWebsiteStats(websiteId, filters);
 ```
 
-**Why better:** authentication ≠ authorization. The real routes always gate with `can*` ([`realtime/[websiteId]/route.ts:20`](../../src/app/api/realtime/[websiteId]/route.ts)). Omitting it is the #1 risk class here ([`../03-architecture-and-patterns/03-validation-auth-and-permissions.md`](../03-architecture-and-patterns/03-validation-auth-and-permissions.md)).
+**Why better:** authentication ≠ authorization. The real routes always gate with `can*` ([`realtime/[websiteId]/route.ts:20`](../../../src/app/api/realtime/[websiteId]/route.ts)). Omitting it is the #1 risk class here ([`../03-architecture-and-patterns/03-validation-auth-and-permissions.md`](../03-architecture-and-patterns/03-validation-auth-and-permissions.md)).
 
 ---
 
@@ -88,7 +88,7 @@ useQuery({ queryKey: ['metrics', websiteId], queryFn: () => get(url, { startAt, 
 useQuery({ queryKey: ['metrics', { websiteId, startAt, endAt, type }], queryFn: ... });
 ```
 
-**Why better:** the key *is* the cache identity. Real hooks include every input ([`useWebsiteMetricsQuery.ts:22-31`](../../src/components/hooks/queries/useWebsiteMetricsQuery.ts)). Omitting one is the React Query flavor of a stale closure.
+**Why better:** the key *is* the cache identity. Real hooks include every input ([`useWebsiteMetricsQuery.ts:22-31`](../../../src/components/hooks/queries/useWebsiteMetricsQuery.ts)). Omitting one is the React Query flavor of a stale closure.
 
 ---
 
@@ -108,7 +108,7 @@ await db.outbox.insert(event);   // durable
 return json({ ok: true });        // truthful: we durably accepted it
 ```
 
-**Why better:** this is exactly Umami's Kafka gap ([`kafka.ts:87-90`](../../src/lib/kafka.ts)) — the "bad" shape is real here. The fix is an outbox ([`../03-architecture-and-patterns/04-side-effects-async-and-reliability.md`](../03-architecture-and-patterns/04-side-effects-async-and-reliability.md)). Recognize "empty catch after a critical write returning success" as a reliability smell.
+**Why better:** this is exactly Umami's Kafka gap ([`kafka.ts:87-90`](../../../src/lib/kafka.ts)) — the "bad" shape is real here. The fix is an outbox ([`../03-architecture-and-patterns/04-side-effects-async-and-reliability.md`](../03-architecture-and-patterns/04-side-effects-async-and-reliability.md)). Recognize "empty catch after a critical write returning success" as a reliability smell.
 
 ---
 
@@ -127,7 +127,7 @@ function parse(token) { try { return verify(token); } catch { return {}; } }
 function parseToken(token, secret) { try { return jwt.verify(token, secret); } catch { return null; } }
 ```
 
-**Why better:** Umami returns `null` on bad tokens ([`jwt.ts:8-14`](../../src/lib/jwt.ts)) and callers branch on it (`if (!user?.id && !shareToken) return null`, [`auth.ts:37`](../../src/lib/auth.ts)). Returning `{}` would be interpreted as a valid-but-empty auth — a dangerous fail-*open*. `null` forces a decision.
+**Why better:** Umami returns `null` on bad tokens ([`jwt.ts:8-14`](../../../src/lib/jwt.ts)) and callers branch on it (`if (!user?.id && !shareToken) return null`, [`auth.ts:37`](../../../src/lib/auth.ts)). Returning `{}` would be interpreted as a valid-but-empty auth — a dangerous fail-*open*. `null` forces a decision.
 
 ---
 
@@ -147,7 +147,7 @@ const rows = await rawQuery(
 );
 ```
 
-**Why better:** Umami's engine binds values, never concatenates ([`prisma.ts:268-276`](../../src/lib/prisma.ts)). The one place to stay alert is non-value interpolation like `order by ${orderBy}` (`prisma.ts:318`) — allow-list those.
+**Why better:** Umami's engine binds values, never concatenates ([`prisma.ts:268-276`](../../../src/lib/prisma.ts)). The one place to stay alert is non-value interpolation like `order by ${orderBy}` (`prisma.ts:318`) — allow-list those.
 
 ---
 
@@ -167,7 +167,7 @@ if (!result.success) return badRequest(...);
 return save(result.data.payload.website); // typed, coerced
 ```
 
-**Why better:** Umami validates at the boundary and works with typed `result.data` ([`request.ts:26-41`](../../src/lib/request.ts)). `any` should stop at the edge, not flow inward. (The raw-SQL layer's `any` is a *deliberate, contained* exception — [`../02-stack-and-language-mastery/03-type-system-and-contracts.md`](../02-stack-and-language-mastery/03-type-system-and-contracts.md).)
+**Why better:** Umami validates at the boundary and works with typed `result.data` ([`request.ts:26-41`](../../../src/lib/request.ts)). `any` should stop at the edge, not flow inward. (The raw-SQL layer's `any` is a *deliberate, contained* exception — [`../02-stack-and-language-mastery/03-type-system-and-contracts.md`](../02-stack-and-language-mastery/03-type-system-and-contracts.md).)
 
 ---
 
@@ -185,7 +185,7 @@ const sampleRate = config.rate || 0.15; // rate=0 (disable) becomes 0.15!
 const sampleRate = config.rate ?? 0.15; // rate=0 stays 0
 ```
 
-**Why better:** `||` treats `0`/`''`/`false` as "unset." Umami uses `||` intentionally where 0 is meaningless (`pageSize || DEFAULT`, [`prisma.ts:286`](../../src/lib/prisma.ts)) and `??` where a falsy value is valid ([`detect.ts:133`](../../src/lib/detect.ts)). Choose per meaning, not by habit.
+**Why better:** `||` treats `0`/`''`/`false` as "unset." Umami uses `||` intentionally where 0 is meaningless (`pageSize || DEFAULT`, [`prisma.ts:286`](../../../src/lib/prisma.ts)) and `??` where a falsy value is valid ([`detect.ts:133`](../../../src/lib/detect.ts)). Choose per meaning, not by habit.
 
 ---
 
@@ -206,7 +206,7 @@ const schema = z.object({ payload: z.object({
 }).refine(p => p.website ?? p.websiteId) });
 ```
 
-**Why better:** the `/api/send` payload is a public contract depended on by deployed scripts ([`send/route.ts:24-64`](../../src/app/api/send/route.ts)). Renaming a field breaks every embedder silently. Additive, backward-compatible evolution is the only safe path for public contracts.
+**Why better:** the `/api/send` payload is a public contract depended on by deployed scripts ([`send/route.ts:24-64`](../../../src/app/api/send/route.ts)). Renaming a field breaks every embedder silently. Additive, backward-compatible evolution is the only safe path for public contracts.
 
 ---
 

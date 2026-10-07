@@ -8,13 +8,13 @@ Twelve cards on React 19, state management, data fetching, rendering, and access
 
 **Round:** frontend. **Tests:** render model, profiling.
 
-**Anchor:** conceptual; Umami's dashboard uses React 19 + the React Compiler ([`package.json:101,136`](../../package.json)).
+**Anchor:** conceptual; Umami's dashboard uses React 19 + the React Compiler ([`package.json:101,136`](../../../package.json)).
 
 **Junior:** "When state changes." **Mid adds:** a component re-renders when its state/props change or its parent re-renders; you find waste with the React DevTools Profiler, looking for components rendering when their props are referentially equal. **Senior adds:** React 19's compiler auto-memoizes, so many manual `useMemo`/`useCallback`s are now redundant; the remaining causes of waste are unstable props (new object/array each render) and over-broad store subscriptions. The fix is stabilizing the input, not sprinkling `memo`.
 
 **Follow-ups:** "What changed about memoization in React 19?" "Show me a re-render bug."
 
-**Drill:** Explain how a broad Zustand selector (`useApp(s => s)`) causes re-renders vs. a narrow one (`useApp(s => s.shareToken)`, [`useApi.ts:9`](../../src/components/hooks/useApi.ts)).
+**Drill:** Explain how a broad Zustand selector (`useApp(s => s)`) causes re-renders vs. a narrow one (`useApp(s => s.shareToken)`, [`useApi.ts:9`](../../../src/components/hooks/useApi.ts)).
 
 ---
 
@@ -22,7 +22,7 @@ Twelve cards on React 19, state management, data fetching, rendering, and access
 
 **Round:** frontend architecture. **Tests:** state categorization.
 
-**Anchor:** React Query hooks (`components/hooks/queries/*`), Zustand ([`store/app.ts`](../../src/store/app.ts)), local `useState`.
+**Anchor:** React Query hooks (`components/hooks/queries/*`), Zustand ([`store/app.ts`](../../../src/store/app.ts)), local `useState`.
 
 **Junior:** "In state/context." **Mid adds:** server state (remote data cache) → React Query; global client state (user, theme, share) → Zustand; local UI → `useState`. Umami keeps them separate. **Senior adds:** putting server data in Zustand means re-implementing caching/refetch/invalidation React Query gives you free; putting UI state in a global store causes needless coupling and re-renders. The category dictates the tool. (Umami's `config`/`user` in the store are arguably server data — a fair critique.)
 
@@ -36,7 +36,7 @@ Twelve cards on React 19, state management, data fetching, rendering, and access
 
 **Round:** frontend/data. **Tests:** cache identity.
 
-**Anchor:** [`useWebsiteMetricsQuery.ts:22-31`](../../src/components/hooks/queries/useWebsiteMetricsQuery.ts).
+**Anchor:** [`useWebsiteMetricsQuery.ts:22-31`](../../../src/components/hooks/queries/useWebsiteMetricsQuery.ts).
 
 **Junior:** "It names the query." **Mid adds:** the key *is* the cache identity — every input the result depends on must be in it (websiteId, dates, filters, params). Change a key → refetch; same key → cached. **Senior adds:** an incomplete key is a correctness bug: change an omitted input and React Query serves stale data for the new input — the same failure class as a stale closure. It's not a perf nit, it's wrong data.
 
@@ -50,7 +50,7 @@ Twelve cards on React 19, state management, data fetching, rendering, and access
 
 **Round:** frontend/UX. **Tests:** perceived performance.
 
-**Anchor:** [`useWebsiteMetricsQuery.ts:40`](../../src/components/hooks/queries/useWebsiteMetricsQuery.ts).
+**Anchor:** [`useWebsiteMetricsQuery.ts:40`](../../../src/components/hooks/queries/useWebsiteMetricsQuery.ts).
 
 **Junior:** "Shows placeholder data." **Mid adds:** while refetching for a new key (e.g. a changed date range), it keeps showing the previous data instead of flashing empty/loading — smoother UX. **Senior adds:** the tradeoff is briefly showing *stale* data labeled as current; fine for dashboards, wrong for something where showing old data is misleading (a balance, a permission state). Pair it with an `isFetching` indicator so users know a refresh is in flight.
 
@@ -62,7 +62,7 @@ Twelve cards on React 19, state management, data fetching, rendering, and access
 
 **Round:** frontend. **Tests:** conditional fetching.
 
-**Anchor:** `enabled: !!websiteId` ([`useWebsiteMetricsQuery.ts:39`](../../src/components/hooks/queries/useWebsiteMetricsQuery.ts)).
+**Anchor:** `enabled: !!websiteId` ([`useWebsiteMetricsQuery.ts:39`](../../../src/components/hooks/queries/useWebsiteMetricsQuery.ts)).
 
 **Junior:** "Turns the query on/off." **Mid adds:** it defers the fetch until dependencies are ready — here, until `websiteId` exists — avoiding a request with `undefined` in the URL. **Senior adds:** it's the declarative alternative to an imperative "if (id) fetch()" in an effect; it also keeps the query in an `idle` state so loading UI doesn't flash prematurely. Forgetting it causes a wasted/erroring request on first render.
 
@@ -88,7 +88,7 @@ Twelve cards on React 19, state management, data fetching, rendering, and access
 
 **Round:** frontend architecture. **Tests:** data-layer choices.
 
-**Anchor:** [`useApi.ts`](../../src/components/hooks/useApi.ts) + ~60 typed hooks.
+**Anchor:** [`useApi.ts`](../../../src/components/hooks/useApi.ts) + ~60 typed hooks.
 
 **Junior:** "REST is standard." **Mid adds:** REST + a thin `useApi` wrapper + React Query gives a plain HTTP API third parties can call, at the cost of hand-writing types on the client (e.g. `WebsiteMetricsData`) with no server→client inference. **Senior adds:** tRPC would give end-to-end type safety but couples client to server and blocks non-JS/third-party consumers; GraphQL solves over/under-fetching but adds a schema/runtime. For a product with a public API (which Umami has), REST is the right call — the manual typing is the accepted cost.
 
@@ -100,11 +100,11 @@ Twelve cards on React 19, state management, data fetching, rendering, and access
 
 **Round:** frontend. **Tests:** forms + mutations.
 
-**Anchor:** [`LoginForm.tsx`](../../src/app/login/LoginForm.tsx) + [`useUpdateQuery.ts`](../../src/components/hooks/queries/useUpdateQuery.ts).
+**Anchor:** [`LoginForm.tsx`](../../../src/app/login/LoginForm.tsx) + [`useUpdateQuery.ts`](../../../src/components/hooks/queries/useUpdateQuery.ts).
 
 **Junior:** "Handle onSubmit, setState." **Mid adds:** Umami uses a form component with field rules (`rules={{ required }}`), a mutation hook (`useUpdateQuery` → `useMutation`) for the async call, and surfaces `error` from the mutation. On success it sets auth + navigates. **Senior adds:** validation lives client-side for UX *and* server-side (Zod) for trust — never rely on client validation alone. The mutation's `onSuccess`/`error` model separates the async result from field state cleanly.
 
-**Drill:** Trace login submit → mutation → `setClientAuthToken` → redirect ([`LoginForm.tsx:23-30`](../../src/app/login/LoginForm.tsx)).
+**Drill:** Trace login submit → mutation → `setClientAuthToken` → redirect ([`LoginForm.tsx:23-30`](../../../src/app/login/LoginForm.tsx)).
 
 ---
 
@@ -112,7 +112,7 @@ Twelve cards on React 19, state management, data fetching, rendering, and access
 
 **Round:** frontend/JS. **Tests:** closures in hooks.
 
-**Anchor:** conceptual; the `queryFn` closes over `startAt`/`filters` ([`useWebsiteMetricsQuery.ts:32-38`](../../src/components/hooks/queries/useWebsiteMetricsQuery.ts)).
+**Anchor:** conceptual; the `queryFn` closes over `startAt`/`filters` ([`useWebsiteMetricsQuery.ts:32-38`](../../../src/components/hooks/queries/useWebsiteMetricsQuery.ts)).
 
 **Mid:** a closure captures variables at definition; a wrong dependency array reuses a stale value. **Senior adds:** in React Query, the defense is that the `queryKey` *is* your dependency list — an omitted input is the stale-closure bug wearing a different hat. Same root cause, two idioms. (Cross-ref [`01-js-ts-node-deep-dive.md`](01-js-ts-node-deep-dive.md) Q10.)
 
@@ -136,9 +136,9 @@ Twelve cards on React 19, state management, data fetching, rendering, and access
 
 **Round:** frontend/perf. **Tests:** performance metrics literacy.
 
-**Anchor:** the tracker's performance observers ([`tracker/index.js:251-313`](../../src/tracker/index.js)); thresholds ([`constants.ts:106-112`](../../src/lib/constants.ts)).
+**Anchor:** the tracker's performance observers ([`tracker/index.js:251-313`](../../../src/tracker/index.js)); thresholds ([`constants.ts:106-112`](../../../src/lib/constants.ts)).
 
-**Junior:** "Speed metrics." **Mid adds:** LCP (largest contentful paint — loading), INP (interaction to next paint — responsiveness), CLS (cumulative layout shift — visual stability). Good/poor thresholds are in the code. **Senior adds:** they're *field* metrics (real users), which is why Umami captures them via `PerformanceObserver` in the actual browser, not a lab tool. The subtlety: CLS uses session windows and INP uses a 98th-percentile of interactions ([`tracker/index.js:268-313`](../../src/tracker/index.js)) — averages would mislead. Knowing they're percentile/window-based is a strong signal.
+**Junior:** "Speed metrics." **Mid adds:** LCP (largest contentful paint — loading), INP (interaction to next paint — responsiveness), CLS (cumulative layout shift — visual stability). Good/poor thresholds are in the code. **Senior adds:** they're *field* metrics (real users), which is why Umami captures them via `PerformanceObserver` in the actual browser, not a lab tool. The subtlety: CLS uses session windows and INP uses a 98th-percentile of interactions ([`tracker/index.js:268-313`](../../../src/tracker/index.js)) — averages would mislead. Knowing they're percentile/window-based is a strong signal.
 
 **Drill:** Why does the tracker compute INP as a p98 rather than a max or mean?
 
@@ -148,7 +148,7 @@ Twelve cards on React 19, state management, data fetching, rendering, and access
 
 **Round:** frontend/perf. **Tests:** bundle optimization.
 
-**Anchor:** heavy deps — `react-simple-maps`, `chart.js`, the replay player (`rrweb-player`) — in [`package.json`](../../package.json).
+**Anchor:** heavy deps — `react-simple-maps`, `chart.js`, the replay player (`rrweb-player`) — in [`package.json`](../../../package.json).
 
 **Junior:** "Lazy load." **Mid adds:** `import()`/`React.lazy` for heavy, rarely-used views — the world map, the session-replay player — so the initial dashboard bundle doesn't carry them. **Senior adds:** measure first (`next build` chunk sizes); split by route and by heavy component; the replay player and map are prime candidates because they're large and only used in specific views. The tradeoff is a load delay when the view opens, mitigated by prefetch on hover/intent.
 

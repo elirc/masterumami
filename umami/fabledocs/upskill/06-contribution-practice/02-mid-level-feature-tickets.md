@@ -14,7 +14,7 @@ Twelve cross-layer tickets. Each touches schema/API/UI/tests together and **requ
 
 **Design note must cover:** key strategy (IP+website vs IP), limit/window values (justify from expected legit volume), Redis-off fallback, where the check goes (top of handler vs shared helper).
 
-**Layers:** `lib/redis` (has `rateLimit` already, [`redis.ts:72`](../../src/lib/redis.ts)), the three collection routes, config for limits.
+**Layers:** `lib/redis` (has `rateLimit` already, [`redis.ts:72`](../../../src/lib/redis.ts)), the three collection routes, config for limits.
 
 **Risk:** throttling legitimate bursts (analytics is bursty); Redis dependency. **Rollback:** feature-flag the limiter; disable via env.
 
@@ -52,7 +52,7 @@ Twelve cross-layer tickets. Each touches schema/API/UI/tests together and **requ
 
 **Design note:** the allow-list map (requested name → real column); how `pagedRawQuery` consumes it; rejecting unknown values.
 
-**Layers:** `lib/prisma` (`pagedRawQuery`, [`prisma.ts:318`](../../src/lib/prisma.ts)), the list query files, the route schemas (`sortingParams`), the UI table headers.
+**Layers:** `lib/prisma` (`pagedRawQuery`, [`prisma.ts:318`](../../../src/lib/prisma.ts)), the list query files, the route schemas (`sortingParams`), the UI table headers.
 
 **Risk:** the whole point is closing the injection surface — get the allow-list airtight. **Rollback:** revert schema param; sorting reverts to hardcoded default.
 
@@ -70,7 +70,7 @@ Twelve cross-layer tickets. Each touches schema/API/UI/tests together and **requ
 
 **Design note:** which cache keys to invalidate on update (`website:<id>`, maybe `session:*`); soft vs hard remove; why the record endpoint currently bypasses the cache and whether this lets it stop.
 
-**Layers:** `websites/[websiteId]/route.ts` (POST/update, [`:71`](../../src/app/api/websites/[websiteId]/route.ts)), `lib/redis`/`lib/load`.
+**Layers:** `websites/[websiteId]/route.ts` (POST/update, [`:71`](../../../src/app/api/websites/[websiteId]/route.ts)), `lib/redis`/`lib/load`.
 
 **Risk:** missing a key → still stale; invalidating too broadly → cache churn. **Rollback:** remove the invalidation call; behavior reverts to TTL.
 
@@ -88,7 +88,7 @@ Twelve cross-layer tickets. Each touches schema/API/UI/tests together and **requ
 
 **Design note:** the error-id scheme; what's logged vs returned; updating the collection catch blocks that currently return `serializeError` to the client.
 
-**Layers:** `lib/response`, the collection/record catch blocks ([`send/route.ts:314-320`](../../src/app/api/send/route.ts)).
+**Layers:** `lib/response`, the collection/record catch blocks ([`send/route.ts:314-320`](../../../src/app/api/send/route.ts)).
 
 **Risk:** changing response shape may affect clients that parse errors. **Rollback:** revert response builder.
 
@@ -122,7 +122,7 @@ Twelve cross-layer tickets. Each touches schema/API/UI/tests together and **requ
 
 **Story:** As a user, I want to filter analytics by a new dimension (pick one not yet filterable but present on events).
 
-**Design note:** the dimension's column; `filterParams` addition ([`schema.ts:45`](../../src/lib/schema.ts)); `FILTER_COLUMNS` mapping; both SQL branches; the UI filter control.
+**Design note:** the dimension's column; `filterParams` addition ([`schema.ts:45`](../../../src/lib/schema.ts)); `FILTER_COLUMNS` mapping; both SQL branches; the UI filter control.
 
 **Layers:** `schema.ts`, `constants.ts` (FILTER_COLUMNS), query builders, UI filter component.
 
@@ -158,7 +158,7 @@ Twelve cross-layer tickets. Each touches schema/API/UI/tests together and **requ
 
 **Story:** As a maintainer, I want report writes validated by the strict per-type schema, not just `anyObjectParam`.
 
-**Design note:** apply `reportTypeSchema` ([`schema.ts:279`](../../src/lib/schema.ts)) at the save path; migration/back-compat for existing reports with loose params.
+**Design note:** apply `reportTypeSchema` ([`schema.ts:279`](../../../src/lib/schema.ts)) at the save path; migration/back-compat for existing reports with loose params.
 
 **Layers:** report save route, `schema.ts`, tests.
 

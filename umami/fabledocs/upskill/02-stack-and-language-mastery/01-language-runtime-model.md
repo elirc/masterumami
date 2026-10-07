@@ -8,15 +8,15 @@ Why it matters in production: on the server, one slow synchronous operation bloc
 
 ### Where Umami relies on this
 
-**The collection handler is a chain of `await`s** ([`send/route.ts:150-271`](../../src/app/api/send/route.ts)). Each `await` on a DB call yields the thread back to the loop, so the Node server can interleave other requests while this one waits on Postgres/ClickHouse. The handler *looks* sequential but doesn't monopolize the thread.
+**The collection handler is a chain of `await`s** ([`send/route.ts:150-271`](../../../src/app/api/send/route.ts)). Each `await` on a DB call yields the thread back to the loop, so the Node server can interleave other requests while this one waits on Postgres/ClickHouse. The handler *looks* sequential but doesn't monopolize the thread.
 
-**The tracker debounces with a macrotask.** After a SPA navigation, it schedules the track via `setTimeout(track, delayDuration)` ([`tracker/index.js:94`](../../src/tracker/index.js)) — a macrotask that lets the DOM settle (new `document.title`) before reading it.
+**The tracker debounces with a macrotask.** After a SPA navigation, it schedules the track via `setTimeout(track, delayDuration)` ([`tracker/index.js:94`](../../../src/tracker/index.js)) — a macrotask that lets the DOM settle (new `document.title`) before reading it.
 
-**`beforeSend` awaits a possibly-async user hook** ([`tracker/index.js:169`](../../src/tracker/index.js)): `payload = await Promise.resolve(callback(type, payload))`. Wrapping in `Promise.resolve` normalizes a sync-or-async return into a thenable — a clean idiom worth stealing.
+**`beforeSend` awaits a possibly-async user hook** ([`tracker/index.js:169`](../../../src/tracker/index.js)): `payload = await Promise.resolve(callback(type, payload))`. Wrapping in `Promise.resolve` normalizes a sync-or-async return into a thenable — a clean idiom worth stealing.
 
 ### Sharp edge in this repo
 
-In `saveEvent`'s relational branch, the event, event-data, and revenue writes are **serial awaits** ([`saveEvent.ts:143-167`](../../src/queries/sql/events/saveEvent.ts)). Some are necessarily serial (revenue needs the event id), but the point to internalize: serial `await`s add their latencies. Independent awaits should be `Promise.all`'d. Recognizing needless serialization is a common perf-review finding.
+In `saveEvent`'s relational branch, the event, event-data, and revenue writes are **serial awaits** ([`saveEvent.ts:143-167`](../../../src/queries/sql/events/saveEvent.ts)). Some are necessarily serial (revenue needs the event id), but the point to internalize: serial `await`s add their latencies. Independent awaits should be `Promise.all`'d. Recognizing needless serialization is a common perf-review finding.
 
 ## Promises, concurrency vs. parallelism
 
@@ -26,9 +26,9 @@ In `saveEvent`'s relational branch, the event, event-data, and revenue writes ar
 
 ### Where Umami relies on this
 
-The **batch endpoint is deliberately sequential** ([`batch/route.ts:21-46`](../../src/app/api/batch/route.ts)): it `await`s each item's `send.POST` in a `for` loop, accumulating a shared `cache`. That's a choice — it trades throughput for a stable cache-token hand-off and ordered error indices. A `Promise.all` would be faster but lose the ordered `cache` accumulation. Being able to argue *why sequential here* is a strong-answer move.
+The **batch endpoint is deliberately sequential** ([`batch/route.ts:21-46`](../../../src/app/api/batch/route.ts)): it `await`s each item's `send.POST` in a `for` loop, accumulating a shared `cache`. That's a choice — it trades throughput for a stable cache-token hand-off and ordered error indices. A `Promise.all` would be faster but lose the ordered `cache` accumulation. Being able to argue *why sequential here* is a strong-answer move.
 
-The **Kafka producer swallows rejections** ([`kafka.ts:87-90`](../../src/lib/kafka.ts)) precisely so a downstream failure doesn't reject the request's promise chain — fire-and-forget. The cost (silent loss) is covered in the pattern catalog.
+The **Kafka producer swallows rejections** ([`kafka.ts:87-90`](../../../src/lib/kafka.ts)) precisely so a downstream failure doesn't reject the request's promise chain — fire-and-forget. The cost (silent loss) is covered in the pattern catalog.
 
 ## Node vs. browser: two runtimes, one language
 
@@ -39,7 +39,7 @@ The **Kafka producer swallows rejections** ([`kafka.ts:87-90`](../../src/lib/kaf
 | Modules | bundled by Rollup into one IIFE | ESM (`"type":"module"`) |
 | Constraints | tiny size, `keepalive` limits | connection pooling, single thread |
 
-Umami makes this split concrete: `src/lib/crypto.ts` imports `node:crypto` (`:1`) and can *only* run server-side, while `src/tracker/index.js` uses `PerformanceObserver` and `window` and can *only* run in a browser. The `getSession` API the tracker exposes ([`tracker/index.js:391`](../../src/tracker/index.js)) is a browser global; the identity hashing happens on the server where the secret lives.
+Umami makes this split concrete: `src/lib/crypto.ts` imports `node:crypto` (`:1`) and can *only* run server-side, while `src/tracker/index.js` uses `PerformanceObserver` and `window` and can *only* run in a browser. The `getSession` API the tracker exposes ([`tracker/index.js:391`](../../../src/tracker/index.js)) is a browser global; the identity hashing happens on the server where the secret lives.
 
 ## Modules & ESM
 

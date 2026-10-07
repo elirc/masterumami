@@ -2,7 +2,7 @@
 
 The method: **reproduce → narrow → hypothesize → test cheaply → fix root cause → add regression coverage.** The goal is to fix the *cause*, not the symptom, and to leave a test so it can't come back. Five realistic Umami scenarios follow, each ending with the interview version — how to narrate the same debugging aloud in an interview round.
 
-Tools you actually have here: Node/Next server logs, `debug` namespaces (`umami:*` — e.g. `DEBUG=umami:* pnpm dev`), `LOG_QUERY=1` to log SQL ([`prisma.ts:256-260`](../../src/lib/prisma.ts)), browser devtools/Network, and `pnpm test`/Cypress. Commands `__inferred__`.
+Tools you actually have here: Node/Next server logs, `debug` namespaces (`umami:*` — e.g. `DEBUG=umami:* pnpm dev`), `LOG_QUERY=1` to log SQL ([`prisma.ts:256-260`](../../../src/lib/prisma.ts)), browser devtools/Network, and `pnpm test`/Cypress. Commands `__inferred__`.
 
 ---
 
@@ -14,8 +14,8 @@ Tools you actually have here: Node/Next server logs, `debug` namespaces (`umami:
 
 **Narrowing path:**
 1. Check whether *event* counts also drop, or only *visitor* counts. If events are steady but visitors reset → identity, not loss.
-2. Look at how `sessionId` is derived: [`send/route.ts:143-147`](../../src/app/api/send/route.ts). It hashes in `sessionSalt`.
-3. Look at `getSalt` ([`crypto.ts:72-78`](../../src/lib/crypto.ts)): with `SALT_ROTATION=month` (the default), the salt is `startOfMonth(createdAt)`.
+2. Look at how `sessionId` is derived: [`send/route.ts:143-147`](../../../src/app/api/send/route.ts). It hashes in `sessionSalt`.
+3. Look at `getSalt` ([`crypto.ts:72-78`](../../../src/lib/crypto.ts)): with `SALT_ROTATION=month` (the default), the salt is `startOfMonth(createdAt)`.
 
 **Useful probes:** Log `sessionSalt` for two events from the same client on the 31st and the 1st; they differ.
 
@@ -37,8 +37,8 @@ Tools you actually have here: Node/Next server logs, `debug` namespaces (`umami:
 
 **Narrowing path:**
 1. Confirm the events aren't in ClickHouse at all → write-side loss.
-2. Trace the write: `saveEvent` ClickHouse branch sends via Kafka when enabled ([`saveEvent.ts:259-263`](../../src/queries/sql/events/saveEvent.ts)).
-3. Read `sendMessage` ([`kafka.ts:66-91`](../../src/lib/kafka.ts)): it wraps `producer.send` in try/catch and only `console.log`s on failure — returning `undefined`, not throwing. Note what the catch actually covers: `connect()` failures. The send promise is returned un-awaited, so a post-connect send rejection would 500 instead. A failed *first* connect leaves `producer` undefined (`kafka.ts:95-98`), so every later send is swallowed until restart. That fits "briefly unreachable, but events stay missing."
+2. Trace the write: `saveEvent` ClickHouse branch sends via Kafka when enabled ([`saveEvent.ts:259-263`](../../../src/queries/sql/events/saveEvent.ts)).
+3. Read `sendMessage` ([`kafka.ts:66-91`](../../../src/lib/kafka.ts)): it wraps `producer.send` in try/catch and only `console.log`s on failure — returning `undefined`, not throwing. Note what the catch actually covers: `connect()` failures. The send promise is returned un-awaited, so a post-connect send rejection would 500 instead. A failed *first* connect leaves `producer` undefined (`kafka.ts:95-98`), so every later send is swallowed until restart. That fits "briefly unreachable, but events stay missing."
 
 **Useful probes:** Grep server logs for `KAFKA ERROR`. Their presence, alongside 200 responses to `/api/send`, confirms it.
 
@@ -62,12 +62,12 @@ Tools you actually have here: Node/Next server logs, `debug` namespaces (`umami:
 
 **Narrowing path:**
 1. Confirm A's token is valid and resolves to A → authentication is fine.
-2. The bug is authorization. Compare the leaking route against a correct one: correct routes call `canViewWebsite(auth, websiteId)` right after `parseRequest` ([`realtime/[websiteId]/route.ts:20`](../../src/app/api/realtime/[websiteId]/route.ts), [`websites/[websiteId]/route.ts:28`](../../src/app/api/websites/[websiteId]/route.ts)).
+2. The bug is authorization. Compare the leaking route against a correct one: correct routes call `canViewWebsite(auth, websiteId)` right after `parseRequest` ([`realtime/[websiteId]/route.ts:20`](../../../src/app/api/realtime/[websiteId]/route.ts), [`websites/[websiteId]/route.ts:28`](../../../src/app/api/websites/[websiteId]/route.ts)).
 3. The leaking route is missing that `can*` call, or calls it against the wrong id.
 
 **Useful probes:** Grep the route for `canView`/`canUpdate`. Absence is the smoking gun.
 
-**Likely root cause:** A missing per-handler authorization check — the classic IDOR. `parseRequest` authenticates but deliberately does *not* authorize (it can't know the resource, [`request.ts:44-50`](../../src/lib/request.ts)).
+**Likely root cause:** A missing per-handler authorization check — the classic IDOR. `parseRequest` authenticates but deliberately does *not* authorize (it can't know the resource, [`request.ts:44-50`](../../../src/lib/request.ts)).
 
 **Root-cause fix:** Add the correct `canViewWebsite(auth, websiteId)` guard returning `unauthorized()` on failure — matching the pattern in sibling routes.
 
@@ -86,13 +86,13 @@ Tools you actually have here: Node/Next server logs, `debug` namespaces (`umami:
 **First question:** Is it slow in the DB (query) or in the app (serialization/render)?
 
 **Narrowing path:**
-1. Set `LOG_QUERY=1` and read the emitted SQL for `getWebsiteSessions` ([`getWebsiteSessions.ts:33-77`](../../src/queries/sql/sessions/getWebsiteSessions.ts)).
-2. Check the `where`/`join`: it filters `website_event.website_id` + date, joins `session`, groups by 11 columns. Confirm the composite index `(website_id, created_at, ...)` is being used ([`schema.prisma:139-148`](../../prisma/schema.prisma)).
-3. Note `pagedRawQuery` runs a `count(*)` over the same subquery *and* the page query ([`prisma.ts:325-329`](../../src/lib/prisma.ts)) — two scans per request.
+1. Set `LOG_QUERY=1` and read the emitted SQL for `getWebsiteSessions` ([`getWebsiteSessions.ts:33-77`](../../../src/queries/sql/sessions/getWebsiteSessions.ts)).
+2. Check the `where`/`join`: it filters `website_event.website_id` + date, joins `session`, groups by 11 columns. Confirm the composite index `(website_id, created_at, ...)` is being used ([`schema.prisma:139-148`](../../../prisma/schema.prisma)).
+3. Note `pagedRawQuery` runs a `count(*)` over the same subquery *and* the page query ([`prisma.ts:325-329`](../../../src/lib/prisma.ts)) — two scans per request.
 
 **Useful probes:** `EXPLAIN ANALYZE` the logged SQL against a realistic dataset; watch for a sequential scan or a huge sort.
 
-**Likely root cause:** The unbounded date range makes the grouped scan large; the extra `count(*)` doubles the work; and `pageSize` has no upper bound ([`schema.ts:79`](../../src/lib/schema.ts)), so a client can request an enormous page.
+**Likely root cause:** The unbounded date range makes the grouped scan large; the extra `count(*)` doubles the work; and `pageSize` has no upper bound ([`schema.ts:79`](../../../src/lib/schema.ts)), so a client can request an enormous page.
 
 **Root-cause fix:** Bound `pageSize` (Ticket 5); consider whether the total `count` is needed for every page (cursor pagination avoids it); ensure the date range has a sane default cap. Measure before and after — don't guess.
 
@@ -111,14 +111,14 @@ Tools you actually have here: Node/Next server logs, `debug` namespaces (`umami:
 **First question:** Why does one path react instantly and another lag?
 
 **Narrowing path:**
-1. Find where each path reads the website. Collection uses `fetchWebsite` (Redis-cached 24h, [`load.ts:6-13`](../../src/lib/load.ts)). Record uses `getWebsite` directly ([`record/route.ts:56-57`](../../src/app/api/record/route.ts)).
+1. Find where each path reads the website. Collection uses `fetchWebsite` (Redis-cached 24h, [`load.ts:6-13`](../../../src/lib/load.ts)). Record uses `getWebsite` directly ([`record/route.ts:56-57`](../../../src/app/api/record/route.ts)).
 2. The record path even has a comment: "Query directly to avoid stale Redis cache for recordingEnabled."
 
 **Useful probes:** Check the Redis TTL for the `website:<id>` key (86400s).
 
 **Likely root cause:** The cached website (24h TTL) serves a stale `replayEnabled` on any path that reads through `fetchWebsite`. The record path deliberately bypasses the cache; other paths don't.
 
-**Root-cause fix:** On the settings-update handler, *invalidate* the cache key (`redis.remove('website:<id>', soft)`) when `replayEnabled`/`replayConfig` change — so the cache reflects the change without waiting for TTL. Read [`websites/[websiteId]/route.ts:71-76`](../../src/app/api/websites/[websiteId]/route.ts) to see where the update happens.
+**Root-cause fix:** On the settings-update handler, *invalidate* the cache key (`redis.remove('website:<id>', soft)`) when `replayEnabled`/`replayConfig` change — so the cache reflects the change without waiting for TTL. Read [`websites/[websiteId]/route.ts:71-76`](../../../src/app/api/websites/[websiteId]/route.ts) to see where the update happens.
 
 **Regression test:** Assert that updating a website removes/refreshes its cache entry.
 

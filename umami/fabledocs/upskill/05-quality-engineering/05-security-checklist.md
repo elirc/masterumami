@@ -78,7 +78,7 @@ Every major web-security concern mapped to Umami's real code, with a pre-merge c
 
 ## Dependencies & uploads
 
-- **Uploads:** session replay stores rrweb event bytes ([`schema.prisma:368`](../../prisma/schema.prisma)); capped at 200 events/request. No arbitrary file upload surface found.
+- **Uploads:** session replay stores rrweb event bytes ([`schema.prisma:368`](../../../prisma/schema.prisma)); capped at 200 events/request. No arbitrary file upload surface found.
 - **Dependencies:** pnpm lockfile pins versions; standard `pnpm audit` applies.
 
 ---

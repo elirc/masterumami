@@ -63,7 +63,7 @@ Junior: makes ingest authenticated "for security." Mid: recognizes ingest must b
 
 Core entities: **event**, **session**, **website**, **user/team**.
 
-What Umami did ([`prisma/schema.prisma`](../../prisma/schema.prisma)):
+What Umami did ([`prisma/schema.prisma`](../../../prisma/schema.prisma)):
 
 - `website_event` (`:99`) — one row per pageview/custom event, wide: url, referrer, UTM, click ids, event name, performance metrics. Denormalized on purpose for query speed.
 - `session` (`:34`) — browser/os/device/geo, keyed by the hashed `session_id`.

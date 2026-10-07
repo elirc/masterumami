@@ -8,7 +8,7 @@ Structure discipline: a senior doesn't start coding until problem, design, migra
 
 ## Project S1: Durable event delivery (outbox + relay) — ~1–2 weeks
 
-**Problem:** On ClickHouse+Kafka deployments, a broker outage silently drops events with a 200 response ([`kafka.ts:87-90`](../../src/lib/kafka.ts)). The product's core promise — don't lose data — is violated invisibly.
+**Problem:** On ClickHouse+Kafka deployments, a broker outage silently drops events with a 200 response ([`kafka.ts:87-90`](../../../src/lib/kafka.ts)). The product's core promise — don't lose data — is violated invisibly.
 
 **Product value:** Data integrity. For a paid analytics product, silent loss is an existential bug.
 
@@ -91,7 +91,7 @@ Structure discipline: a senior doesn't start coding until problem, design, migra
 
 ## Project S4: Cursor-based pagination for large lists — ~1 week
 
-**Problem:** `pagedRawQuery` does a full `count(*)` plus the page query every request ([`prisma.ts:325-329`](../../src/lib/prisma.ts)); with no `pageSize` cap ([`schema.ts:79`](../../src/lib/schema.ts)), big sites' session/event lists are slow.
+**Problem:** `pagedRawQuery` does a full `count(*)` plus the page query every request ([`prisma.ts:325-329`](../../../src/lib/prisma.ts)); with no `pageSize` cap ([`schema.ts:79`](../../../src/lib/schema.ts)), big sites' session/event lists are slow.
 
 **Product value:** Fast, stable pagination on high-volume websites.
 
@@ -113,7 +113,7 @@ Structure discipline: a senior doesn't start coding until problem, design, migra
 
 ## Project S5: Schema-per-tenant isolation option — ~2–3 weeks
 
-**Problem:** Enterprise customers may need hard data isolation. Umami already supports a Postgres `search_path` schema ([`prisma.ts:262-266`](../../src/lib/prisma.ts)), but it's not a first-class tenant-provisioning feature.
+**Problem:** Enterprise customers may need hard data isolation. Umami already supports a Postgres `search_path` schema ([`prisma.ts:262-266`](../../../src/lib/prisma.ts)), but it's not a first-class tenant-provisioning feature.
 
 **Product value:** Sellable enterprise isolation guarantee.
 
@@ -137,7 +137,7 @@ Structure discipline: a senior doesn't start coding until problem, design, migra
 
 ## Project S6: Real-time live-visitor stream — ~2 weeks
 
-**Problem:** The realtime view polls ([`realtime/[websiteId]/route.ts`](../../src/app/api/realtime/[websiteId]/route.ts)); true live updates need a push channel.
+**Problem:** The realtime view polls ([`realtime/[websiteId]/route.ts`](../../../src/app/api/realtime/[websiteId]/route.ts)); true live updates need a push channel.
 
 **Product value:** A compelling live dashboard; competitive with GA real-time.
 

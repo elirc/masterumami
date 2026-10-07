@@ -38,7 +38,7 @@ The rule: test behavior and contracts, not implementation details. A test that b
 
 ## Fixtures, builders, mocks, isolation
 
-Umami's test infrastructure ([`src/test/`](../../src/test/)):
+Umami's test infrastructure ([`src/test/`](../../../src/test/)):
 
 - **`setup.ts`** — global test setup: configures `data-test` as the test id, mocks browser APIs jsdom lacks (`matchMedia`, `ResizeObserver`, `IntersectionObserver`, `clipboard`, `scrollTo`), and `afterEach` does `cleanup()` + `vi.restoreAllMocks()` for **isolation** (each test starts clean).
 - **`render.tsx`** — a custom `render` wrapping components in all required providers (React Query, intl, Zen, router), plus `createTestQueryClient()` with `retry: false` so tests don't wait on retries. Always use this, not Testing Library's raw `render`.
@@ -52,8 +52,8 @@ Umami's test infrastructure ([`src/test/`](../../src/test/)):
 
 Two things make tests flaky; both appear in Umami's logic:
 
-- **Time:** identity derivation and visit expiry depend on `Date.now()`/`createdAt` ([`send/route.ts:140-175`](../../src/app/api/send/route.ts)). Test time-dependent logic with `vi.setSystemTime()` / fake timers, never real `Date.now()`.
-- **Randomness:** the recorder samples with `Math.random()` ([`recorder/index.js:22`](../../src/recorder/index.js)); `uuid()` v4 is random ([`crypto.ts:65`](../../src/lib/crypto.ts)). Stub or seed randomness (`vi.spyOn(Math,'random')`) so assertions are deterministic. The deterministic `uuid(...args)` path (v5 hash) is naturally testable — prefer asserting on it.
+- **Time:** identity derivation and visit expiry depend on `Date.now()`/`createdAt` ([`send/route.ts:140-175`](../../../src/app/api/send/route.ts)). Test time-dependent logic with `vi.setSystemTime()` / fake timers, never real `Date.now()`.
+- **Randomness:** the recorder samples with `Math.random()` ([`recorder/index.js:22`](../../../src/recorder/index.js)); `uuid()` v4 is random ([`crypto.ts:65`](../../../src/lib/crypto.ts)). Stub or seed randomness (`vi.spyOn(Math,'random')`) so assertions are deterministic. The deterministic `uuid(...args)` path (v5 hash) is naturally testable — prefer asserting on it.
 
 ## Flake prevention checklist
 

@@ -18,7 +18,7 @@ The universal tell of a strong candidate: **you split the problem space before g
 **Your narration should hit:**
 1. "First, separate write-side vs read-side — are the events in the store at all?" (If not persisted → write-side.)
 2. "I'd check the deployment: large-scale means ClickHouse + Kafka. Let me look at the write path." → `saveEvent` ClickHouse branch → `kafka.sendMessage`.
-3. "Here — `sendMessage` catches and only `console.log`s ([kafka.ts:87-90](../../src/lib/kafka.ts)), returning undefined. So a broker failure is swallowed and `/api/send` still returns 200. That's at-most-once delivery."
+3. "Here — `sendMessage` catches and only `console.log`s ([kafka.ts:87-90](../../../src/lib/kafka.ts)), returning undefined. So a broker failure is swallowed and `/api/send` still returns 200. That's at-most-once delivery."
 4. "I'd confirm by grepping logs for `KAFKA ERROR` co-occurring with 200s."
 
 **Interviewer follow-ups & good answers:**
@@ -36,7 +36,7 @@ The universal tell of a strong candidate: **you split the problem space before g
 
 **Narration:**
 1. "AuthN or authZ? Is the user actually authenticated as themselves?" → confirm token resolves to them → it's authorization.
-2. "I'd compare the leaking route to a correct one. Correct routes call `canViewWebsite(auth, id)` after `parseRequest` ([realtime route:20](../../src/app/api/realtime/[websiteId]/route.ts))."
+2. "I'd compare the leaking route to a correct one. Correct routes call `canViewWebsite(auth, id)` after `parseRequest` ([realtime route:20](../../../src/app/api/realtime/[websiteId]/route.ts))."
 3. "The leaking route is missing that check, or checks the wrong id — a classic IDOR."
 4. "Fix: add the guard. Then the bigger question — how do we ensure *every* route does it?"
 
@@ -54,8 +54,8 @@ The universal tell of a strong candidate: **you split the problem space before g
 
 **Narration:**
 1. "DB or app? I'd bet DB. `LOG_QUERY=1` and read the SQL for `getWebsiteSessions`."
-2. "`EXPLAIN ANALYZE` it — is it using the composite index or seq-scanning? The indexes exist ([schema.prisma:139-148](../../prisma/schema.prisma)), so I suspect the *inputs*."
-3. "Two suspects: unbounded date range, and `pagedRawQuery` runs a `count(*)` plus the page query ([prisma.ts:325](../../src/lib/prisma.ts)) — two scans. Plus `pageSize` has no cap ([schema.ts:79](../../src/lib/schema.ts))."
+2. "`EXPLAIN ANALYZE` it — is it using the composite index or seq-scanning? The indexes exist ([schema.prisma:139-148](../../../prisma/schema.prisma)), so I suspect the *inputs*."
+3. "Two suspects: unbounded date range, and `pagedRawQuery` runs a `count(*)` plus the page query ([prisma.ts:325](../../../src/lib/prisma.ts)) — two scans. Plus `pageSize` has no cap ([schema.ts:79](../../../src/lib/schema.ts))."
 4. "Fix: bound pageSize; consider cursor pagination to drop the count; sane date-range default. Re-measure."
 
 **Follow-ups:**
@@ -71,7 +71,7 @@ The universal tell of a strong candidate: **you split the problem space before g
 **Prompt:** "Review this PR that adds user-selectable sorting to the sessions list by passing `orderBy` through to `pagedRawQuery`."
 
 **Expected review (say it aloud, graded):**
-- **Blocking:** `pagedRawQuery` interpolates `order by ${orderBy}` ([prisma.ts:318](../../src/lib/prisma.ts)) — user input here is SQL injection. Require an allow-list.
+- **Blocking:** `pagedRawQuery` interpolates `order by ${orderBy}` ([prisma.ts:318](../../../src/lib/prisma.ts)) — user input here is SQL injection. Require an allow-list.
 - **Important:** interaction with the existing hardcoded `order by ... desc`.
 - **Optional:** test the rejection path.
 
@@ -88,7 +88,7 @@ The universal tell of a strong candidate: **you split the problem space before g
 **Prompt:** "Review this PR that changes `getWebsite` to the cached `fetchWebsite` in the record endpoint, to reduce DB load."
 
 **Expected review:**
-- **Blocking:** the direct read is deliberate (comment at [record/route.ts:56](../../src/app/api/record/route.ts)) — `replayEnabled` must be fresh; caching reintroduces up-to-24h staleness, so disabling replay wouldn't take effect. Regression of a correctness choice.
+- **Blocking:** the direct read is deliberate (comment at [record/route.ts:56](../../../src/app/api/record/route.ts)) — `replayEnabled` must be fresh; caching reintroduces up-to-24h staleness, so disabling replay wouldn't take effect. Regression of a correctness choice.
 - **Optional:** if caching is truly wanted, pair it with invalidation on update.
 
 **Good phrasing:** *"This bypass is intentional — the comment explains replay must be read fresh. `fetchWebsite` caches 24h, so toggling replay off would lag up to a day. I'd keep the direct read unless we also invalidate on update."*

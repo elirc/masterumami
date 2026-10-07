@@ -4,15 +4,15 @@ An honest senior review of Umami: strongest choices, real risks, and what I'd ch
 
 ## Strongest design choices (learn from these)
 
-1. **Cookieless, hash-derived identity.** Deriving `sessionId` from IP+UA+rotating salt ([`send/route.ts:147`](../../src/app/api/send/route.ts), [`crypto.ts:60-78`](../../src/lib/crypto.ts)) is the product's whole thesis in ~30 lines: no consent banner, no PII at rest, and — because the id is deterministic — idempotent writes for free. Elegant and load-bearing.
+1. **Cookieless, hash-derived identity.** Deriving `sessionId` from IP+UA+rotating salt ([`send/route.ts:147`](../../../src/app/api/send/route.ts), [`crypto.ts:60-78`](../../../src/lib/crypto.ts)) is the product's whole thesis in ~30 lines: no consent banner, no PII at rest, and — because the id is deterministic — idempotent writes for free. Elegant and load-bearing.
 
-2. **Pluggable persistence by config.** One dispatch table ([`db.ts:22`](../../src/lib/db.ts)) lets the same product run on Postgres for a hobbyist or ClickHouse+Kafka for a firehose. That the two implementations are *colocated* in each query file keeps the abstraction honest.
+2. **Pluggable persistence by config.** One dispatch table ([`db.ts:22`](../../../src/lib/db.ts)) lets the same product run on Postgres for a hobbyist or ClickHouse+Kafka for a firehose. That the two implementations are *colocated* in each query file keeps the abstraction honest.
 
-3. **Read scaling via materialized rollups.** Pre-aggregating events into `website_event_stats_hourly` ([`db/clickhouse/schema.sql:94,145`](../../db/clickhouse/schema.sql)) is the right lever for analytics reads and shows real operational maturity.
+3. **Read scaling via materialized rollups.** Pre-aggregating events into `website_event_stats_hourly` ([`db/clickhouse/schema.sql:94,145`](../../../db/clickhouse/schema.sql)) is the right lever for analytics reads and shows real operational maturity.
 
 4. **Separated authorization module.** Keeping authz rules in `permissions/` rather than sprinkled through handlers makes them testable and auditable.
 
-5. **Parameterized raw SQL done correctly.** The `{{param}}`→`$n` engine ([`prisma.ts:268-276`](../../src/lib/prisma.ts)) gets the expressiveness of hand-written SQL without (in the covered paths) the injection risk. Most hand-rolled SQL layers get this wrong; Umami doesn't.
+5. **Parameterized raw SQL done correctly.** The `{{param}}`→`$n` engine ([`prisma.ts:268-276`](../../../src/lib/prisma.ts)) gets the expressiveness of hand-written SQL without (in the covered paths) the injection risk. Most hand-rolled SQL layers get this wrong; Umami doesn't.
 
 6. **Index strategy that matches the query shape.** Every read is tenant+time-first, and every index leads with `(website_id, created_at, …)`. The schema *documents* the access pattern.
 
@@ -22,26 +22,26 @@ Grouped by severity. **[Confirmed]** = verified in code. **[Hypothesis]** = plau
 
 ### High
 
-- **[Confirmed] Fire-and-forget Kafka = silent data loss.** A broker outage at connect time drops events while returning 200 ([`kafka.ts:87-90`](../../src/lib/kafka.ts)). A failed first connect leaves the producer unset, so the loss persists until restart (`:95-98`). Post-connect send rejections escape the un-awaited `return` and 500 instead. Re-verified 2026-10-06. For a product whose entire value is not losing events, at-most-once delivery on the primary write path is the most serious architectural weakness. → *Migration path* below.
+- **[Confirmed] Fire-and-forget Kafka = silent data loss.** A broker outage at connect time drops events while returning 200 ([`kafka.ts:87-90`](../../../src/lib/kafka.ts)). A failed first connect leaves the producer unset, so the loss persists until restart (`:95-98`). Post-connect send rejections escape the un-awaited `return` and 500 instead. Re-verified 2026-10-06. For a product whose entire value is not losing events, at-most-once delivery on the primary write path is the most serious architectural weakness. → *Migration path* below.
 
 - **[Confirmed] Per-handler authorization invites IDOR.** Authz is a manual `can*` call in each route; nothing enforces that every id-bearing route makes it. One forgotten check is a cross-tenant data leak. The risk is not any specific route (the ones reviewed are guarded) but the *absence of a systemic guarantee*.
 
-- **[Hypothesis] No app-level rate limiting on open ingest.** `/api/send`, `/batch`, `/record` are unauthenticated and unthrottled in-app (`redis.rateLimit` exists but uncalled, [`redis.ts:72`](../../src/lib/redis.ts)). Absent an upstream WAF/proxy, they're open to volume abuse and cost amplification (especially `/batch`, which re-enters `send` per item). Needs deployment-context confirmation.
+- **[Hypothesis] No app-level rate limiting on open ingest.** `/api/send`, `/batch`, `/record` are unauthenticated and unthrottled in-app (`redis.rateLimit` exists but uncalled, [`redis.ts:72`](../../../src/lib/redis.ts)). Absent an upstream WAF/proxy, they're open to volume abuse and cost amplification (especially `/batch`, which re-enters `send` per item). Needs deployment-context confirmation.
 
 ### Medium
 
-- **[Confirmed] Latent SQL-injection surface in `pagedRawQuery`.** `order by ${orderBy}` interpolates directly ([`prisma.ts:318-323`](../../src/lib/prisma.ts)). Not currently reachable (no route passes user `orderBy`), but it's a loaded gun: one future route wiring user sort into a raw path is an injection. → allow-list the sort column.
+- **[Confirmed] Latent SQL-injection surface in `pagedRawQuery`.** `order by ${orderBy}` interpolates directly ([`prisma.ts:318-323`](../../../src/lib/prisma.ts)). Not currently reachable (no route passes user `orderBy`), but it's a loaded gun: one future route wiring user sort into a raw path is an injection. → allow-list the sort column.
 
-- **[Confirmed] No atomicity across event/event_data/revenue.** Partial writes possible on crash ([`saveEvent.ts:143-167`](../../src/queries/sql/events/saveEvent.ts)). Tolerable for analytics; a landmine if revenue is ever treated as authoritative.
+- **[Confirmed] No atomicity across event/event_data/revenue.** Partial writes possible on crash ([`saveEvent.ts:143-167`](../../../src/queries/sql/events/saveEvent.ts)). Tolerable for analytics; a landmine if revenue is ever treated as authoritative.
 
-- **[Confirmed] Validation bypass via suffixed-filter re-add.** Numeric-suffixed filters skip Zod ([`request.ts:33-38`](../../src/lib/request.ts)). Those values flow into query building; low current risk given downstream parameterization, but it undermines "the schema is the contract."
+- **[Confirmed] Validation bypass via suffixed-filter re-add.** Numeric-suffixed filters skip Zod ([`request.ts:33-38`](../../../src/lib/request.ts)). Those values flow into query building; low current risk given downstream parameterization, but it undermines "the schema is the contract."
 
-- **[Confirmed] Client-supplied `revenue` is unauthenticated.** `eventData.revenue` comes from the public payload ([`saveEvent.ts:154`](../../src/queries/sql/events/saveEvent.ts)); anyone can POST fake revenue for a website id they know. Inherent to open ingest, but worth stating as a data-trust limit.
+- **[Confirmed] Client-supplied `revenue` is unauthenticated.** `eventData.revenue` comes from the public payload ([`saveEvent.ts:154`](../../../src/queries/sql/events/saveEvent.ts)); anyone can POST fake revenue for a website id they know. Inherent to open ingest, but worth stating as a data-trust limit.
 
 ### Low
 
-- **[Confirmed] Cross-cutting global patch** (`BigInt.prototype.toJSON`, [`db.ts:8`](../../src/lib/db.ts)) — precision-lossy and process-wide; a scoped serializer is cleaner.
-- **[Confirmed] Divergent entity reads in permissions** (`getEntity` vs `getWebsite`, [`website.ts:23,67`](../../src/permissions/website.ts)) — maintenance drift risk.
+- **[Confirmed] Cross-cutting global patch** (`BigInt.prototype.toJSON`, [`db.ts:8`](../../../src/lib/db.ts)) — precision-lossy and process-wide; a scoped serializer is cleaner.
+- **[Confirmed] Divergent entity reads in permissions** (`getEntity` vs `getWebsite`, [`website.ts:23,67`](../../../src/permissions/website.ts)) — maintenance drift risk.
 - **[Confirmed] Thin observability** — no metrics/tracing; failures are `console.log` only.
 - **[Confirmed] Type-safety gap on raw SQL** — `rawQuery` returns `any`; result interfaces are hand-maintained, unchecked against columns.
 
@@ -68,7 +68,7 @@ Prioritized by (impact × reach) ÷ effort. Each with a migration path and test 
 
 ### 3. Add ingest rate limiting
 
-- **Change:** call the existing `redis.rateLimit` ([`redis.ts:72`](../../src/lib/redis.ts)) keyed by IP+website on `/send`/`/batch`/`/record`; bound `/batch` array size (Ticket 10).
+- **Change:** call the existing `redis.rateLimit` ([`redis.ts:72`](../../../src/lib/redis.ts)) keyed by IP+website on `/send`/`/batch`/`/record`; bound `/batch` array size (Ticket 10).
 - **Blast radius:** collection; needs care not to throttle legitimate bursts.
 - **Tests:** unit test the limiter branch; load-test the endpoint.
 

@@ -17,11 +17,11 @@ Flow index:
 **Why this flow matters:** This is the product. Every design decision — cookieless identity, unauthenticated ingest, dual persistence, a signed client cache — lives here. If you understand only one flow, understand this one.
 
 **Open these files first:**
-- [`src/tracker/index.js`](../../src/tracker/index.js) — the browser script (`getPayload` `:64`, `send` `:163`, `track` `:207`).
-- [`src/app/api/send/route.ts`](../../src/app/api/send/route.ts) — the server handler (`POST` `:66`).
-- [`src/lib/crypto.ts`](../../src/lib/crypto.ts) — identity derivation (`uuid` `:60`, `getSalt` `:72`).
-- [`src/lib/db.ts`](../../src/lib/db.ts) — dispatch (`runQuery` `:22`).
-- [`src/queries/sql/events/saveEvent.ts`](../../src/queries/sql/events/saveEvent.ts) — the write.
+- [`src/tracker/index.js`](../../../src/tracker/index.js) — the browser script (`getPayload` `:64`, `send` `:163`, `track` `:207`).
+- [`src/app/api/send/route.ts`](../../../src/app/api/send/route.ts) — the server handler (`POST` `:66`).
+- [`src/lib/crypto.ts`](../../../src/lib/crypto.ts) — identity derivation (`uuid` `:60`, `getSalt` `:72`).
+- [`src/lib/db.ts`](../../../src/lib/db.ts) — dispatch (`runQuery` `:22`).
+- [`src/queries/sql/events/saveEvent.ts`](../../../src/queries/sql/events/saveEvent.ts) — the write.
 
 **Trace:**
 
@@ -65,11 +65,11 @@ Flow index:
 **Why this flow matters:** It's the mirror image of Flow 1 and the template every dashboard read follows: hook → `useApi` → `parseRequest` → permission check → parameterized SQL → JSON. Learn it once, recognize it 60 times.
 
 **Open these files first:**
-- [`src/components/hooks/queries/useWebsiteMetricsQuery.ts`](../../src/components/hooks/queries/useWebsiteMetricsQuery.ts) (`:12`)
-- [`src/components/hooks/useApi.ts`](../../src/components/hooks/useApi.ts) (`:20`)
-- [`src/lib/request.ts`](../../src/lib/request.ts) (`parseRequest` `:12`)
-- [`src/permissions/website.ts`](../../src/permissions/website.ts) (`canViewWebsite` `:7`)
-- [`src/lib/prisma.ts`](../../src/lib/prisma.ts) (`rawQuery` `:255`)
+- [`src/components/hooks/queries/useWebsiteMetricsQuery.ts`](../../../src/components/hooks/queries/useWebsiteMetricsQuery.ts) (`:12`)
+- [`src/components/hooks/useApi.ts`](../../../src/components/hooks/useApi.ts) (`:20`)
+- [`src/lib/request.ts`](../../../src/lib/request.ts) (`parseRequest` `:12`)
+- [`src/permissions/website.ts`](../../../src/permissions/website.ts) (`canViewWebsite` `:7`)
+- [`src/lib/prisma.ts`](../../../src/lib/prisma.ts) (`rawQuery` `:255`)
 
 **Trace:**
 
@@ -109,10 +109,10 @@ Flow index:
 **Why this flow matters:** It shows a real, subtle decision: Umami issues **either** a stateless encrypted JWT **or** a Redis-backed opaque key, depending on whether Redis is configured. That "stateless vs. server-side session" tradeoff is a top interview topic.
 
 **Open these files first:**
-- [`src/app/api/auth/login/route.ts`](../../src/app/api/auth/login/route.ts) (`:12`)
-- [`src/lib/auth.ts`](../../src/lib/auth.ts) (`saveAuth` `:62`, `checkAuth` `:17`)
-- [`src/lib/jwt.ts`](../../src/lib/jwt.ts) (`createSecureToken` `:16`)
-- [`src/lib/password.ts`](../../src/lib/password.ts)
+- [`src/app/api/auth/login/route.ts`](../../../src/app/api/auth/login/route.ts) (`:12`)
+- [`src/lib/auth.ts`](../../../src/lib/auth.ts) (`saveAuth` `:62`, `checkAuth` `:17`)
+- [`src/lib/jwt.ts`](../../../src/lib/jwt.ts) (`createSecureToken` `:16`)
+- [`src/lib/password.ts`](../../../src/lib/password.ts)
 
 **Trace:**
 
@@ -147,8 +147,8 @@ Flow index:
 **Why this flow matters:** It's a clean example of **composition over duplication**: the pixel and link routes don't re-implement collection — they build a synthetic `Request` and call the `send` handler directly. Great "how do you avoid duplication across endpoints?" material.
 
 **Open these files first:**
-- [`src/app/(collect)/p/[slug]/route.ts`](../../src/app/(collect)/p/[slug]/route.ts) — pixel (`:12`)
-- [`src/app/(collect)/q/[slug]/route.ts`](../../src/app/(collect)/q/[slug]/route.ts) — link (`:10`)
+- [`src/app/(collect)/p/[slug]/route.ts`](../../../src/app/(collect)/p/[slug]/route.ts) — pixel (`:12`)
+- [`src/app/(collect)/q/[slug]/route.ts`](../../../src/app/(collect)/q/[slug]/route.ts) — link (`:10`)
 
 **Trace:**
 
@@ -181,9 +181,9 @@ Flow index:
 **Why this flow matters:** It's the closest thing to an async/large-payload flow: the recorder batches rrweb events and flushes them; the server stores compressed chunks. It also demonstrates *why* you sometimes bypass a cache.
 
 **Open these files first:**
-- [`src/recorder/index.js`](../../src/recorder/index.js) (`:1`)
-- [`src/app/api/record/route.ts`](../../src/app/api/record/route.ts) (`:27`)
-- [`src/queries/sql/replays/saveRecording.ts`](../../src/queries/sql/replays/saveRecording.ts)
+- [`src/recorder/index.js`](../../../src/recorder/index.js) (`:1`)
+- [`src/app/api/record/route.ts`](../../../src/app/api/record/route.ts) (`:27`)
+- [`src/queries/sql/replays/saveRecording.ts`](../../../src/queries/sql/replays/saveRecording.ts)
 
 **Trace:**
 
@@ -218,9 +218,9 @@ Flow index:
 **Why this flow matters:** It's a *second* authorization path that runs entirely without a user account, using a share token. Multi-path authz ("logged-in user OR share link") is exactly the kind of subtlety interviewers and real bugs live in.
 
 **Open these files first:**
-- [`src/app/api/share/[slug]/route.ts`](../../src/app/api/share/[slug]/route.ts) (`:47`)
-- [`src/lib/auth.ts`](../../src/lib/auth.ts) (`parseShareToken` `:80`, `checkAuth` share branch `:42-48`)
-- [`src/permissions/website.ts`](../../src/permissions/website.ts) (share-token match `:12-21`)
+- [`src/app/api/share/[slug]/route.ts`](../../../src/app/api/share/[slug]/route.ts) (`:47`)
+- [`src/lib/auth.ts`](../../../src/lib/auth.ts) (`parseShareToken` `:80`, `checkAuth` share branch `:42-48`)
+- [`src/permissions/website.ts`](../../../src/permissions/website.ts) (share-token match `:12-21`)
 
 **Trace:**
 

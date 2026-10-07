@@ -6,11 +6,11 @@
 
 | Capability | Mechanism | Anchor |
 | --- | --- | --- |
-| **Namespaced debug logs** | `debug` library, `umami:*` namespaces (auth, prisma, redis, clickhouse, kafka) | `debug('umami:auth')` [`auth.ts:9`](../../src/lib/auth.ts) |
-| **SQL logging** | `LOG_QUERY=1` logs query + params + name | [`prisma.ts:256-260`](../../src/lib/prisma.ts) |
-| **Error serialization** | `serializeError` for loggable errors | [`send/route.ts:314`](../../src/app/api/send/route.ts) |
-| **Health check** | `GET /api/heartbeat`, used by container healthcheck | [`docker-compose.yml`](../../docker-compose.yml) |
-| **DB preflight** | `check-db.js` verifies connection + min version at build | [`scripts/check-db.js`](../../scripts/check-db.js) |
+| **Namespaced debug logs** | `debug` library, `umami:*` namespaces (auth, prisma, redis, clickhouse, kafka) | `debug('umami:auth')` [`auth.ts:9`](../../../src/lib/auth.ts) |
+| **SQL logging** | `LOG_QUERY=1` logs query + params + name | [`prisma.ts:256-260`](../../../src/lib/prisma.ts) |
+| **Error serialization** | `serializeError` for loggable errors | [`send/route.ts:314`](../../../src/app/api/send/route.ts) |
+| **Health check** | `GET /api/heartbeat`, used by container healthcheck | [`docker-compose.yml`](../../../docker-compose.yml) |
+| **DB preflight** | `check-db.js` verifies connection + min version at build | [`scripts/check-db.js`](../../../scripts/check-db.js) |
 | **Telemetry (opt)** | `scripts/telemetry.js`, `api/scripts/telemetry` | — |
 
 Turn on logs locally: `DEBUG=umami:* pnpm dev`, or `LOG_QUERY=1` to see every SQL statement. These are your primary in-repo debugging tools ([Systematic Debugging](03-systematic-debugging.md)).
@@ -19,8 +19,8 @@ Turn on logs locally: `DEBUG=umami:* pnpm dev`, or `LOG_QUERY=1` to see every SQ
 
 There are **no metrics, no tracing, and no alerting** in the repo. Failures surface only as log lines:
 
-- A dropped event on the Kafka path logs a single `KAFKA ERROR` line ([`kafka.ts:89`](../../src/lib/kafka.ts)) and returns 200 — invisible unless someone greps logs.
-- Collection 500s `console.log` a serialized error ([`send/route.ts:318`](../../src/app/api/send/route.ts)) — no counter, no rate, no page.
+- A dropped event on the Kafka path logs a single `KAFKA ERROR` line ([`kafka.ts:89`](../../../src/lib/kafka.ts)) and returns 200 — invisible unless someone greps logs.
+- Collection 500s `console.log` a serialized error ([`send/route.ts:318`](../../../src/app/api/send/route.ts)) — no counter, no rate, no page.
 - The heartbeat is shallow (it doesn't verify the DB is writable, just that the process answers).
 
 So the truthful answer to "how would you know events are being dropped?" today is: *you wouldn't, until a metrics gap or a customer complaint surfaced it.* That's the observability project in [`../06-contribution-practice/03-senior-build-projects.md`](../06-contribution-practice/03-senior-build-projects.md).
@@ -40,10 +40,10 @@ The most important row is Kafka collection: it's the one failure that's *silent 
 
 ## Deploy & rollback
 
-- **Artifacts:** Docker image (`ghcr.io/umami-software/umami`, [`docker-compose.yml`](../../docker-compose.yml)); also Netlify (`netlify.toml`) and standard Node (`server.js`, `start-docker`).
-- **DB migrations:** `prisma migrate deploy` via `update-db`, run before serving (`start-docker` chains `check-db` → `update-tracker` → `start-server`, [`package.json:18`](../../package.json)). Migrations are **forward-only** (`prisma/migrations/`).
+- **Artifacts:** Docker image (`ghcr.io/umami-software/umami`, [`docker-compose.yml`](../../../docker-compose.yml)); also Netlify (`netlify.toml`) and standard Node (`server.js`, `start-docker`).
+- **DB migrations:** `prisma migrate deploy` via `update-db`, run before serving (`start-docker` chains `check-db` → `update-tracker` → `start-server`, [`package.json:18`](../../../package.json)). Migrations are **forward-only** (`prisma/migrations/`).
 - **Rollback consideration:** because migrations are forward-only, a schema change is not trivially reversible. **Blast radius** thinking: additive migrations (nullable columns) are safe to roll back (old code ignores the column); destructive ones (drop/rename/narrow) are not — rolling back the app leaves it reading a changed schema. Prefer additive, multi-step migrations (expand → migrate → contract) for anything risky.
-- **Tracker update on deploy:** `update-tracker` runs at container start ([`package.json:32`](../../package.json)) so the served `script.js` matches the deployed version.
+- **Tracker update on deploy:** `update-tracker` runs at container start ([`package.json:32`](../../../package.json)) so the served `script.js` matches the deployed version.
 
 ## Operational levers (env-driven)
 
